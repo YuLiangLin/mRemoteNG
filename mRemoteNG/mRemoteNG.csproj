@@ -140,7 +140,10 @@
     <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="SSH.NET" />
     <PackageReference Include="System.Management" />
-    <PackageReference Include="VncSharpCore" />
+    <Reference Include="VncSharpCore">
+      <HintPath>References\VncSharpCore.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Language\Language.Designer.cs">

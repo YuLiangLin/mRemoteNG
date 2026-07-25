@@ -73,7 +73,7 @@ namespace mRemoteNG.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Default Settings")]
+        [global::System.Configuration.DefaultSettingValueAttribute("mRemoteNG-Modern")]
         public string ConDefaultPuttySession {
             get {
                 return ((string)(this["ConDefaultPuttySession"]));

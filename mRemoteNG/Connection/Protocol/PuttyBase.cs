@@ -1,4 +1,5 @@
 ﻿using mRemoteNG.App;
+using mRemoteNG.Config.Putty;
 using mRemoteNG.Messages;
 using mRemoteNG.Resources.Language;
 using mRemoteNG.Security;
@@ -97,7 +98,9 @@ namespace mRemoteNG.Connection.Protocol
 
                 CommandLineArguments arguments = new() { EscapeForShell = false };
 
-                arguments.Add("-load", InterfaceControl.Info.PuttySession);
+                arguments.Add(
+                    "-load",
+                    PuttySessionsManager.Instance.ResolveSessionName(InterfaceControl.Info.PuttySession));
 
                 if (!(InterfaceControl.Info is PuttySessionInfo))
                 {
@@ -374,6 +377,11 @@ namespace mRemoteNG.Connection.Protocol
                 Runtime.MessageCollector.AddMessage(MessageClass.InformationMsg, string.Format(Language.PuttyHandle, PuttyHandle), true);
                 Runtime.MessageCollector.AddMessage(MessageClass.InformationMsg, string.Format(Language.PuttyTitle, PuttyProcess.MainWindowTitle), true);
                 Runtime.MessageCollector.AddMessage(MessageClass.InformationMsg, string.Format(Language.PanelHandle, InterfaceControl.Parent.Handle), true);
+
+                if (PuttyProtocol == Putty_Protocol.ssh)
+                {
+                    SshInputLanguageManager.TryUseEnglish(PuttyHandle);
+                }
 
                 if (!string.IsNullOrEmpty(InterfaceControl.Info?.OpeningCommand))
                 {

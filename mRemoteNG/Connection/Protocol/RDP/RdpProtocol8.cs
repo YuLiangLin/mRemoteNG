@@ -93,14 +93,15 @@ namespace mRemoteNG.Connection.Protocol.RDP
             // Actual RDP session resize is deferred to ResizeEnd() to prevent flickering
             DoResizeControl();
 
-            // Only resize RDP session on window state changes (Maximize/Restore)
-            // Manual drag-resizing will be handled by ResizeEnd()
+            // Window state changes fire before the child layout has settled.
+            // Debounce them just like manual drag-resizing so the session receives
+            // the final panel size instead of the previous window size.
             if (LastWindowState != _frmMain.WindowState)
             {
                 Runtime.MessageCollector.AddMessage(MessageClass.DebugMsg,
-                    $"Resize() - Window state changed from {LastWindowState} to {_frmMain.WindowState}, calling DoResizeClient()");
+                    $"Resize() - Window state changed from {LastWindowState} to {_frmMain.WindowState}, scheduling final session resize");
                 LastWindowState = _frmMain.WindowState;
-                DoResizeClient();
+                ScheduleDebouncedResize();
             }
             else
             {
@@ -168,7 +169,7 @@ namespace mRemoteNG.Connection.Protocol.RDP
             Runtime.MessageCollector?.AddMessage(MessageClass.DebugMsg,
                 $"Debounce timer fired - executing delayed resize to {_pendingResizeSize.Width}x{_pendingResizeSize.Height}");
 
-            // Marshal to the UI thread because DoResizeClient() accesses WinForms and COM objects.
+            // Marshal to the UI thread because the pending resize accesses WinForms and COM objects.
             // Wrap in try/catch: even after the guards above, there is a disposal race between
             // this timer thread and the UI thread that can cause ObjectDisposedException or
             // InvalidOperationException from BeginInvoke.
@@ -176,11 +177,11 @@ namespace mRemoteNG.Connection.Protocol.RDP
             {
                 if (InterfaceControl.InvokeRequired)
                 {
-                    InterfaceControl.BeginInvoke(new Action(DoResizeClient));
+                    InterfaceControl.BeginInvoke(new Action(ApplyPendingResize));
                 }
                 else
                 {
-                    DoResizeClient();
+                    ApplyPendingResize();
                 }
             }
             catch (ObjectDisposedException ex)
@@ -193,6 +194,16 @@ namespace mRemoteNG.Connection.Protocol.RDP
                 Runtime.MessageCollector?.AddMessage(MessageClass.DebugMsg,
                     $"ResizeDebounceTimer_Elapsed: control handle unavailable during BeginInvoke ({ex.GetType().Name})");
             }
+        }
+
+        private void ApplyPendingResize()
+        {
+            // The first Resize event can arrive before WinForms has finished laying out the
+            // connection panel. Re-apply the aspect-fit bounds after the debounce interval
+            // even while the RDP login sequence is still running. The session resize itself
+            // remains guarded by loginComplete inside DoResizeClient().
+            DoResizeControl();
+            DoResizeClient();
         }
 
         private void OnDisplaySettingsChanged(object sender, EventArgs e)
@@ -220,6 +231,13 @@ namespace mRemoteNG.Connection.Protocol.RDP
             return new AxMsRdpClient8NotSafeForScripting();
         }
 
+        protected override void RDPEvent_OnLoginComplete()
+        {
+            base.RDPEvent_OnLoginComplete();
+            DoResizeControl();
+            ScheduleDebouncedResize();
+        }
+
         private void DoResizeClient()
         {
             if (!loginComplete)
@@ -236,13 +254,14 @@ namespace mRemoteNG.Connection.Protocol.RDP
                 return;
             }
 
-            // FitToWindow: fixed resolution set at connect time, scrollbars handle overflow.
-            // SmartSize: SmartSizing scales the image client-side, no session resize needed.
-            // Only Fullscreen benefits from dynamically changing the remote session resolution.
-            if (InterfaceControl.Info.Resolution != RDPResolutions.Fullscreen)
+            // FitToWindow keeps its connect-time resolution and uses scrollbars.
+            // SmartSize also keeps its connect-time resolution because renegotiating
+            // Linux/xRDP session dimensions can create or resume a different working
+            // session. Only true fullscreen mode updates the remote session size.
+            if (!RdpResizePolicy.UsesDynamicSessionResize(InterfaceControl.Info.Resolution))
             {
                 Runtime.MessageCollector.AddMessage(MessageClass.DebugMsg,
-                    $"Resize skipped for '{connectionInfo.Hostname}': Resolution is {InterfaceControl.Info.Resolution} (only Fullscreen supports dynamic resize)");
+                    $"Resize skipped for '{connectionInfo.Hostname}': Resolution is {InterfaceControl.Info.Resolution} (dynamic resize is disabled for this mode)");
                 return;
             }
 
@@ -251,17 +270,14 @@ namespace mRemoteNG.Connection.Protocol.RDP
 
             try
             {
-                // Use InterfaceControl.Size instead of Control.Size because Control may be docked
-                // and not reflect the actual available space
-                Size size = Fullscreen
-                    ? Screen.FromControl(Control).Bounds.Size
-                    : InterfaceControl.Size;
-
+                // True fullscreen follows the monitor bounds.
+                Size size = RdpResizePolicy.NormalizeDesktopSize(
+                    Screen.FromControl(Control).Bounds.Size);
                 Runtime.MessageCollector.AddMessage(MessageClass.DebugMsg,
                     $"Calling UpdateSessionDisplaySettings({size.Width}, {size.Height}) for '{connectionInfo.Hostname}' (Control.Size={Control.Size}, InterfaceControl.Size={InterfaceControl.Size})");
 
                 UpdateSessionDisplaySettings((uint)size.Width, (uint)size.Height);
-
+                RemoteDesktopSize = size;
                 Runtime.MessageCollector.AddMessage(MessageClass.DebugMsg,
                     $"Successfully resized RDP session for '{connectionInfo.Hostname}' to {size.Width}x{size.Height}");
             }
@@ -284,43 +300,56 @@ namespace mRemoteNG.Connection.Protocol.RDP
             if (InterfaceControl.Info.Resolution == RDPResolutions.FitToWindow)
                 return false;
 
+            Rectangle viewport = InterfaceControl.DisplayRectangle;
+            if (viewport.Size == Size.Empty) return false;
+
             Runtime.MessageCollector?.AddMessage(MessageClass.DebugMsg,
-                $"DoResizeControl - Before: Control.Size={Control.Size}, InterfaceControl.Size={InterfaceControl.Size}, Control.Dock={Control.Dock}");
+                $"DoResizeControl - Before: Control.Bounds={Control.Bounds}, Viewport={viewport}, Control.Dock={Control.Dock}");
 
-            // If control is docked, we need to temporarily undock it, resize it, then redock it
-            // because WinForms ignores Size assignments on docked controls
-            bool wasDocked = Control.Dock == DockStyle.Fill;
-
-            if (wasDocked)
+            if (InterfaceControl.Info.Resolution == RDPResolutions.SmartSize)
             {
+                Rectangle targetBounds = RdpResizePolicy.CalculateAspectFitBounds(
+                    viewport,
+                    RemoteDesktopSize);
+
                 Control.Dock = DockStyle.None;
+                Control.Anchor = AnchorStyles.None;
+
+                bool boundsChanged = Control.Bounds != targetBounds;
+                if (boundsChanged)
+                    Control.Bounds = targetBounds;
+
+                // Reapply this after setting the AxHost bounds. MSTSC can keep its
+                // previous renderer size during the connection/login animation unless
+                // SmartSizing is refreshed after the resize.
+                SmartSize = true;
+                Runtime.MessageCollector?.AddMessage(MessageClass.DebugMsg,
+                    $"DoResizeControl - SmartSize aspect-fit bounds={Control.Bounds}, RemoteDesktopSize={RemoteDesktopSize}");
+                return boundsChanged;
             }
 
-            Control.Location = InterfaceControl.Location;
+            // Fullscreen uses the complete viewport.
+            bool wasDocked = Control.Dock == DockStyle.Fill;
+            if (wasDocked)
+                Control.Dock = DockStyle.None;
 
-            if (Control.Size == InterfaceControl.Size || InterfaceControl.Size == Size.Empty)
+            if (Control.Bounds == viewport)
             {
-                // Restore docking if we changed it
                 if (wasDocked)
-                {
                     Control.Dock = DockStyle.Fill;
-                }
 
                 Runtime.MessageCollector?.AddMessage(MessageClass.DebugMsg,
-                    $"DoResizeControl - Skipped: Sizes already match or InterfaceControl.Size is empty");
+                    "DoResizeControl - Skipped: bounds already match viewport");
                 return false;
             }
 
-            Control.Size = InterfaceControl.Size;
+            Control.Bounds = viewport;
 
-            // Restore docking
             if (wasDocked)
-            {
                 Control.Dock = DockStyle.Fill;
-            }
 
             Runtime.MessageCollector?.AddMessage(MessageClass.DebugMsg,
-                $"DoResizeControl - After: Control.Size={Control.Size}, Control.Dock={Control.Dock}");
+                $"DoResizeControl - After: Control.Bounds={Control.Bounds}, Control.Dock={Control.Dock}");
 
             return true;
         }

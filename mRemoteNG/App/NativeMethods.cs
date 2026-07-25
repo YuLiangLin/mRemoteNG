@@ -30,6 +30,9 @@ namespace mRemoteNG.App
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern IntPtr GetForegroundWindow();
 
+        [DllImport("user32.dll", SetLastError = true)]
+        internal static extern int GetKeyboardLayoutList(int nBuff, [Out] IntPtr[]? lpList);
+
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern IntPtr GetSystemMenu(IntPtr hWnd, bool bRevert);
 

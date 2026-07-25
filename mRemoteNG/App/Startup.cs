@@ -7,6 +7,7 @@ using mRemoteNG.App.Info;
 using mRemoteNG.App.Initialization;
 using mRemoteNG.App.Update;
 using mRemoteNG.Config.Connections.Multiuser;
+using mRemoteNG.Config.Putty;
 using mRemoteNG.Config.Settings.Registry;
 using mRemoteNG.Connection;
 using mRemoteNG.Messages;
@@ -45,6 +46,7 @@ namespace mRemoteNG.App
             ParseCommandLineArgs(messageCollector);
             IeBrowserEmulation.Register();
             _connectionIconLoader.GetConnectionIcons();
+            PuttySessionsManager.Instance.EnsureManagedSession();
             DefaultConnectionInfo.Instance.LoadFrom(Settings.Default, a => "ConDefault" + a);
             DefaultConnectionInheritance.Instance.LoadFrom(Settings.Default, a => "InhDefault" + a);
 

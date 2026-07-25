@@ -2,7 +2,11 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Runtime.Versioning;
+using System;
+using mRemoteNG.App;
+using mRemoteNG.Messages;
 using mRemoteNG.Tools;
+using mRemoteNG.Tools.WindowsRegistry;
 using mRemoteNG.Tree.Root;
 
 // ReSharper disable ArrangeAccessorOwnerBody
@@ -15,6 +19,7 @@ namespace mRemoteNG.Config.Putty
         public static PuttySessionsManager Instance { get; } = new PuttySessionsManager();
 
         private readonly List<AbstractPuttySessionsProvider> _providers = [];
+        private readonly ManagedPuttySession _managedSession;
 
         public IEnumerable<AbstractPuttySessionsProvider> Providers => _providers;
 
@@ -22,6 +27,7 @@ namespace mRemoteNG.Config.Putty
 
         private PuttySessionsManager()
         {
+            _managedSession = new ManagedPuttySession(new WinRegistry());
             AddProvider(new PuttySessionsRegistryProvider());
         }
 
@@ -33,6 +39,40 @@ namespace mRemoteNG.Config.Putty
             foreach (AbstractPuttySessionsProvider provider in Providers)
             {
                 AddSessionsFromProvider(provider);
+            }
+        }
+
+        public bool EnsureManagedSession()
+        {
+            try
+            {
+                return _managedSession.EnsureCreated();
+            }
+            catch (Exception ex)
+            {
+                Runtime.MessageCollector?.AddExceptionMessage(
+                    "Unable to create the managed PuTTY session. PuTTY defaults will be used.",
+                    ex,
+                    MessageClass.WarningMsg);
+                return false;
+            }
+        }
+
+        public string ResolveSessionName(string configuredSessionName)
+        {
+            try
+            {
+                return _managedSession.ResolveSessionName(configuredSessionName);
+            }
+            catch (Exception ex)
+            {
+                Runtime.MessageCollector?.AddExceptionMessage(
+                    "Unable to resolve the managed PuTTY session. PuTTY defaults will be used.",
+                    ex,
+                    MessageClass.WarningMsg);
+                return string.IsNullOrWhiteSpace(configuredSessionName)
+                    ? "Default Settings"
+                    : configuredSessionName;
             }
         }
 

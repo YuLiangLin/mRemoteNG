@@ -15,7 +15,7 @@
       <Value Profile="(Default)">eu-central-1</Value>
     </Setting>
     <Setting Name="ConDefaultPuttySession" Type="System.String" Scope="User">
-      <Value Profile="(Default)">Default Settings</Value>
+      <Value Profile="(Default)">mRemoteNG-Modern</Value>
     </Setting>
     <Setting Name="ConDefaultUseConsoleSession" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
