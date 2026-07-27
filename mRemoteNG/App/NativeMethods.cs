@@ -73,14 +73,11 @@ namespace mRemoteNG.App
                                                   [Out] StringBuilder wParam,
                                                   [In] IntPtr lParam);
 
-        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static extern IntPtr SetClipboardViewer(IntPtr hWndNewViewer);
+        [DllImport("user32.dll", SetLastError = true)]
+        internal static extern bool AddClipboardFormatListener(IntPtr hwnd);
 
-        [DllImport("User32.dll", CharSet = CharSet.Auto)]
-        internal static extern bool ChangeClipboardChain(
-            IntPtr hWndRemove,  // handle to window to remove
-            IntPtr hWndNewNext  // handle to next window
-        );
+        [DllImport("user32.dll", SetLastError = true)]
+        internal static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
 
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern bool SetForegroundWindow(IntPtr hWnd);
@@ -527,14 +524,9 @@ namespace mRemoteNG.App
         public const int WM_EXITSIZEMOVE = 0x232;
 
         /// <summary>
-        /// Sent to the first window in the clipboard viewer chain when the content of the clipboard changes. This enables a clipboard viewer window to display the new content of the clipboard.
+        /// Sent to registered clipboard format listeners when the content of the clipboard changes.
         /// </summary>
-        public const int WM_DRAWCLIPBOARD = 0x308;
-
-        /// <summary>
-        /// Sent to the first window in the clipboard viewer chain when a window is being removed from the chain.
-        /// </summary>
-        public const int WM_CHANGECBCHAIN = 0x30D;
+        public const int WM_CLIPBOARDUPDATE = 0x031D;
 
         #endregion
 
