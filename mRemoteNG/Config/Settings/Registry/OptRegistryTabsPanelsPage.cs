@@ -29,9 +29,9 @@ namespace mRemoteNG.Config.Settings.Registry
         public WinRegistryEntry<bool> IdentifyQuickConnectTabs { get; private set; }
 
         /// <summary>
-        /// Specifies whether double-clicking on a tab closes it.
+        /// Specifies whether double-clicking on an RDP tab toggles fullscreen mode.
         /// </summary>
-        public WinRegistryEntry<bool> DoubleClickOnTabClosesIt { get; private set; }
+        public WinRegistryEntry<bool> DoubleClickOnTabTogglesFullscreen { get; private set; }
 
         /// <summary>
         /// Specifies whether the panel selection dialog is always shown.
@@ -62,7 +62,7 @@ namespace mRemoteNG.Config.Settings.Registry
             ShowLogonInfoOnTabs = new WinRegistryEntry<bool>(hive, subKey, nameof(ShowLogonInfoOnTabs)).Read();
             ShowProtocolOnTabs = new WinRegistryEntry<bool>(hive, subKey, nameof(ShowProtocolOnTabs)).Read();
             IdentifyQuickConnectTabs = new WinRegistryEntry<bool>(hive, subKey, nameof(IdentifyQuickConnectTabs)).Read();
-            DoubleClickOnTabClosesIt = new WinRegistryEntry<bool>(hive, subKey, nameof(DoubleClickOnTabClosesIt)).Read();
+            DoubleClickOnTabTogglesFullscreen = new WinRegistryEntry<bool>(hive, subKey, nameof(DoubleClickOnTabTogglesFullscreen)).Read();
             AlwaysShowPanelSelectionDlg = new WinRegistryEntry<bool>(hive, subKey, nameof(AlwaysShowPanelSelectionDlg)).Read();
             CreateEmptyPanelOnStartUp = new WinRegistryEntry<bool>(hive, subKey, nameof(CreateEmptyPanelOnStartUp)).Read();
             StartUpPanelName = new WinRegistryEntry<string>(hive, subKey, nameof(StartUpPanelName)).Read();
@@ -89,7 +89,7 @@ namespace mRemoteNG.Config.Settings.Registry
             ApplyShowLogonInfoOnTabs();
             ApplyShowProtocolOnTabs();
             ApplyIdentifyQuickConnectTabs();
-            ApplyDoubleClickOnTabClosesIt();
+            ApplyDoubleClickOnTabTogglesFullscreen();
             ApplyAlwaysShowPanelSelectionDlg();
             ApplyCreateEmptyPanelOnStartUp();
             ApplyStartUpPanelName();
@@ -120,10 +120,10 @@ namespace mRemoteNG.Config.Settings.Registry
                 Properties.OptionsTabsPanelsPage.Default.IdentifyQuickConnectTabs = IdentifyQuickConnectTabs.Value;
         }
 
-        private void ApplyDoubleClickOnTabClosesIt()
+        private void ApplyDoubleClickOnTabTogglesFullscreen()
         {
-            if (DoubleClickOnTabClosesIt.IsSet)
-                Properties.OptionsTabsPanelsPage.Default.DoubleClickOnTabClosesIt = DoubleClickOnTabClosesIt.Value;
+            if (DoubleClickOnTabTogglesFullscreen.IsSet)
+                Properties.OptionsTabsPanelsPage.Default.DoubleClickOnTabTogglesFullscreen = DoubleClickOnTabTogglesFullscreen.Value;
         }
 
         private void ApplyAlwaysShowPanelSelectionDlg()

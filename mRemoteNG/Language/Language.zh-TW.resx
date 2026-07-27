@@ -418,8 +418,8 @@
   <data name="DontConnectWhenAuthFails" xml:space="preserve">
     <value>如果驗證失敗則不連線</value>
   </data>
-  <data name="DoubleClickTabClosesIt" xml:space="preserve">
-    <value>按兩下索引標籤關閉</value>
+  <data name="DoubleClickTabTogglesFullscreen" xml:space="preserve">
+    <value>按兩下 RDP 頁籤切換全螢幕</value>
   </data>
   <data name="DownloadAndInstall" xml:space="preserve">
     <value>下載並安裝</value>

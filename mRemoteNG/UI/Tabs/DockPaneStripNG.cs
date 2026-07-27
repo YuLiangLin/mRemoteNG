@@ -8,6 +8,7 @@ using mRemoteNG.Connection;
 using mRemoteNG.Properties;
 using WeifenLuo.WinFormsUI.Docking;
 using mRemoteNG.Resources.Language;
+using mRemoteNG.Connection.Protocol.RDP;
 using System.Runtime.Versioning;
 
 namespace mRemoteNG.UI.Tabs
@@ -1400,8 +1401,18 @@ namespace mRemoteNG.UI.Tabs
 
         private void CloseProtocol()
         {
-            InterfaceControl ic = InterfaceControl.FindInterfaceControl(DockPane.DockPanel);
-            ic?.Protocol.Close();
+            InterfaceControl interfaceControl = InterfaceControl.FindInterfaceControl(DockPane.DockPanel);
+            interfaceControl?.Protocol.Close();
+        }
+
+        private void ToggleRdpFullscreen(int tabIndex)
+        {
+            if (tabIndex < 0 || Tabs[tabIndex].Content is not ConnectionTab connectionTab)
+                return;
+
+            InterfaceControl interfaceControl = InterfaceControl.FindInterfaceControl(connectionTab);
+            if (interfaceControl?.Protocol is RdpProtocol rdp)
+                rdp.ToggleFullscreen();
         }
 
         #region Native Methods
@@ -1411,16 +1422,10 @@ namespace mRemoteNG.UI.Tabs
             if (m.Msg == (int)Msgs.WM_LBUTTONDBLCLK)
             {
                 // If the option is not set, do nothing. Do not send the message to base.
-                if (!Properties.OptionsTabsPanelsPage.Default.DoubleClickOnTabClosesIt) return;
+                if (!Properties.OptionsTabsPanelsPage.Default.DoubleClickOnTabTogglesFullscreen) return;
 
-                // Option is set, close the tab, then send to base.
-                //DockPane.CloseActiveContent();
-                CloseProtocol();
-
-                if (PatchController.EnableMemoryLeakFix == true)
-                {
-                    ContentClosed();
-                }
+                // Toggle only the RDP tab that was actually double-clicked.
+                ToggleRdpFullscreen(HitTest());
 
                 return;
             }

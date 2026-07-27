@@ -424,6 +424,7 @@ namespace mRemoteNG.UI.Window
             InterfaceControl ic = GetInterfaceControl();
             if (ic?.Info == null) return;
             FrmMain.Default.SelectedConnection = ic.Info;
+            FrmMain.Default.UpdateSessionsMenuState();
         }
 
         #endregion
@@ -631,7 +632,9 @@ namespace mRemoteNG.UI.Window
             }
         }
 
-        private void ToggleFullscreen()
+        internal bool CanToggleFullscreen => GetInterfaceControl()?.Protocol is RdpProtocol;
+
+        internal void ToggleFullscreen()
         {
             try
             {

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
+using mRemoteNG.App.Info;
 using log4net;
 using log4net.Appender;
 using log4net.Config;
@@ -39,7 +40,9 @@ namespace mRemoteNG.App
         {
             ILoggerRepository repository = LogManager.GetRepository("mRemoteNG");
 
-            XmlConfigurator.Configure(repository, new FileInfo("log4net.config"));
+            string logConfigurationPath = Path.Combine(GeneralAppInfo.HomePath ?? Application.StartupPath,
+                                                       "log4net.config");
+            XmlConfigurator.Configure(repository, new FileInfo(logConfigurationPath));
 
             IAppender[] appenders = repository.GetAppenders();
 

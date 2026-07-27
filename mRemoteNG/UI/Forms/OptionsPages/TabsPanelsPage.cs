@@ -43,7 +43,7 @@ namespace mRemoteNG.UI.Forms.OptionsPages
             chkShowLogonInfoOnTabs.Text = Language.ShowLogonInfoOnTabs;
             chkShowProtocolOnTabs.Text = Language.ShowProtocolOnTabs;
             chkIdentifyQuickConnectTabs.Text = Language.IdentifyQuickConnectTabs;
-            chkDoubleClickClosesTab.Text = Language.DoubleClickTabClosesIt;
+            chkDoubleClickTogglesFullscreen.Text = Language.DoubleClickTabTogglesFullscreen;
             chkAlwaysShowPanelSelectionDlg.Text = Language.AlwaysShowPanelSelection;
             chkCreateEmptyPanelOnStart.Text = Language.CreateEmptyPanelOnStartUp;
             chkBindConnectionsAndConfigPanels.Text = Language.BindConnectionsAndConfigPanels;
@@ -74,7 +74,7 @@ namespace mRemoteNG.UI.Forms.OptionsPages
             chkShowLogonInfoOnTabs.Checked = Properties.OptionsTabsPanelsPage.Default.ShowLogonInfoOnTabs;
             chkShowProtocolOnTabs.Checked = Properties.OptionsTabsPanelsPage.Default.ShowProtocolOnTabs;
             chkIdentifyQuickConnectTabs.Checked = Properties.OptionsTabsPanelsPage.Default.IdentifyQuickConnectTabs;
-            chkDoubleClickClosesTab.Checked = Properties.OptionsTabsPanelsPage.Default.DoubleClickOnTabClosesIt;
+            chkDoubleClickTogglesFullscreen.Checked = Properties.OptionsTabsPanelsPage.Default.DoubleClickOnTabTogglesFullscreen;
             chkAlwaysShowPanelSelectionDlg.Checked = Properties.OptionsTabsPanelsPage.Default.AlwaysShowPanelSelectionDlg;
             chkCreateEmptyPanelOnStart.Checked = Properties.OptionsTabsPanelsPage.Default.CreateEmptyPanelOnStartUp;
             chkBindConnectionsAndConfigPanels.Checked = Properties.OptionsTabsPanelsPage.Default.BindConnectionsAndConfigPanels;
@@ -106,7 +106,7 @@ namespace mRemoteNG.UI.Forms.OptionsPages
             Properties.OptionsTabsPanelsPage.Default.ShowLogonInfoOnTabs = chkShowLogonInfoOnTabs.Checked;
             Properties.OptionsTabsPanelsPage.Default.ShowProtocolOnTabs = chkShowProtocolOnTabs.Checked;
             Properties.OptionsTabsPanelsPage.Default.IdentifyQuickConnectTabs = chkIdentifyQuickConnectTabs.Checked;
-            Properties.OptionsTabsPanelsPage.Default.DoubleClickOnTabClosesIt = chkDoubleClickClosesTab.Checked;
+            Properties.OptionsTabsPanelsPage.Default.DoubleClickOnTabTogglesFullscreen = chkDoubleClickTogglesFullscreen.Checked;
             Properties.OptionsTabsPanelsPage.Default.AlwaysShowPanelSelectionDlg = chkAlwaysShowPanelSelectionDlg.Checked;
             Properties.OptionsTabsPanelsPage.Default.CreateEmptyPanelOnStartUp = chkCreateEmptyPanelOnStart.Checked;
             Properties.OptionsTabsPanelsPage.Default.BindConnectionsAndConfigPanels = chkBindConnectionsAndConfigPanels.Checked;
@@ -143,8 +143,8 @@ namespace mRemoteNG.UI.Forms.OptionsPages
             if (pageRegSettingsInstance.IdentifyQuickConnectTabs.IsSet)
                 DisableControl(chkIdentifyQuickConnectTabs);
 
-            if (pageRegSettingsInstance.DoubleClickOnTabClosesIt.IsSet)
-                DisableControl(chkDoubleClickClosesTab);
+            if (pageRegSettingsInstance.DoubleClickOnTabTogglesFullscreen.IsSet)
+                DisableControl(chkDoubleClickTogglesFullscreen);
 
             if (pageRegSettingsInstance.AlwaysShowPanelSelectionDlg.IsSet)
                 DisableControl(chkAlwaysShowPanelSelectionDlg);
@@ -171,7 +171,7 @@ namespace mRemoteNG.UI.Forms.OptionsPages
                 || pageRegSettingsInstance.ShowLogonInfoOnTabs.IsSet
                 || pageRegSettingsInstance.ShowProtocolOnTabs.IsSet
                 || pageRegSettingsInstance.IdentifyQuickConnectTabs.IsSet
-                || pageRegSettingsInstance.DoubleClickOnTabClosesIt.IsSet
+                || pageRegSettingsInstance.DoubleClickOnTabTogglesFullscreen.IsSet
                 || pageRegSettingsInstance.AlwaysShowPanelSelectionDlg.IsSet
                 || pageRegSettingsInstance.CreateEmptyPanelOnStartUp.IsSet
                 || pageRegSettingsInstance.StartUpPanelName.IsSet

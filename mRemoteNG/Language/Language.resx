@@ -466,8 +466,8 @@ Starting with new connections file.</value>
   <data name="DontConnectWhenAuthFails" xml:space="preserve">
     <value>Don't connect if authentication fails</value>
   </data>
-  <data name="DoubleClickTabClosesIt" xml:space="preserve">
-    <value>Double click on tab closes it</value>
+  <data name="DoubleClickTabTogglesFullscreen" xml:space="preserve">
+    <value>Double click on an RDP tab toggles fullscreen</value>
   </data>
   <data name="DownloadAndInstall" xml:space="preserve">
     <value>Download and Install</value>

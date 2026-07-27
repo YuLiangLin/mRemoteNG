@@ -12,6 +12,7 @@ namespace mRemoteNG.UI.Menu
     {
         private ToolStripMenuItem _mMenSessionsNextSession;
         private ToolStripMenuItem _mMenSessionsPreviousSession;
+        private ToolStripMenuItem _mMenSessionsToggleFullscreen;
         private ToolStripSeparator _mMenSessionsSep1;
         private readonly ToolStripMenuItem[] _sessionNumberItems = new ToolStripMenuItem[9];
 
@@ -24,6 +25,7 @@ namespace mRemoteNG.UI.Menu
         {
             _mMenSessionsNextSession = new ToolStripMenuItem();
             _mMenSessionsPreviousSession = new ToolStripMenuItem();
+            _mMenSessionsToggleFullscreen = new ToolStripMenuItem();
             _mMenSessionsSep1 = new ToolStripSeparator();
 
             // Initialize session number menu items (Ctrl+1 through Ctrl+9)
@@ -37,6 +39,7 @@ namespace mRemoteNG.UI.Menu
             // 
             DropDownItems.Add(_mMenSessionsNextSession);
             DropDownItems.Add(_mMenSessionsPreviousSession);
+            DropDownItems.Add(_mMenSessionsToggleFullscreen);
             DropDownItems.Add(_mMenSessionsSep1);
 
             for (int i = 0; i < 9; i++)
@@ -66,6 +69,15 @@ namespace mRemoteNG.UI.Menu
             _mMenSessionsPreviousSession.Text = Language.PreviousSession;
             _mMenSessionsPreviousSession.Click += mMenSessionsPreviousSession_Click;
 
+            //
+            // mMenSessionsToggleFullscreen
+            //
+            _mMenSessionsToggleFullscreen.Name = "mMenSessionsToggleFullscreen";
+            _mMenSessionsToggleFullscreen.ShortcutKeys = Keys.Control | Keys.Alt | Keys.Enter;
+            _mMenSessionsToggleFullscreen.Size = new System.Drawing.Size(230, 22);
+            _mMenSessionsToggleFullscreen.Text = Language.Fullscreen;
+            _mMenSessionsToggleFullscreen.Click += mMenSessionsToggleFullscreen_Click;
+
             // 
             // mMenSessionsSep1
             // 
@@ -88,6 +100,7 @@ namespace mRemoteNG.UI.Menu
             // Initialize navigation items as disabled
             _mMenSessionsNextSession.Enabled = false;
             _mMenSessionsPreviousSession.Enabled = false;
+            _mMenSessionsToggleFullscreen.Enabled = false;
 
             // Hook up the dropdown opening event to update enabled state
             DropDownOpening += SessionsMenu_DropDownOpening;
@@ -98,6 +111,7 @@ namespace mRemoteNG.UI.Menu
             Text = Language._Sessions;
             _mMenSessionsNextSession.Text = Language.NextSession;
             _mMenSessionsPreviousSession.Text = Language.PreviousSession;
+            _mMenSessionsToggleFullscreen.Text = Language.Fullscreen;
 
             for (int i = 0; i < 9; i++)
             {
@@ -121,6 +135,7 @@ namespace mRemoteNG.UI.Menu
 
             _mMenSessionsNextSession.Enabled = hasMultipleSessions;
             _mMenSessionsPreviousSession.Enabled = hasMultipleSessions;
+            _mMenSessionsToggleFullscreen.Enabled = connectionWindow?.CanToggleFullscreen == true;
 
             // Enable/disable session number items based on session count
             for (int i = 0; i < 9; i++)
@@ -145,6 +160,11 @@ namespace mRemoteNG.UI.Menu
         {
             var connectionWindow = GetActiveConnectionWindow();
             connectionWindow?.NavigateToPreviousTab();
+        }
+
+        private void mMenSessionsToggleFullscreen_Click(object sender, EventArgs e)
+        {
+            GetActiveConnectionWindow()?.ToggleFullscreen();
         }
 
         private void JumpToSessionNumber(int index)

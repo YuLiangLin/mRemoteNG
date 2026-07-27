@@ -39,7 +39,7 @@ namespace mRemoteNG.UI.Forms.OptionsPages
             chkOpenNewTabRightOfSelected = new MrngCheckBox();
             chkAlwaysShowPanelSelectionDlg = new MrngCheckBox();
             chkShowLogonInfoOnTabs = new MrngCheckBox();
-            chkDoubleClickClosesTab = new MrngCheckBox();
+            chkDoubleClickTogglesFullscreen = new MrngCheckBox();
             chkShowProtocolOnTabs = new MrngCheckBox();
             chkCreateEmptyPanelOnStart = new MrngCheckBox();
             chkBindConnectionsAndConfigPanels = new MrngCheckBox();
@@ -123,17 +123,17 @@ namespace mRemoteNG.UI.Forms.OptionsPages
             chkShowLogonInfoOnTabs.Text = "Show logon information on tab names";
             chkShowLogonInfoOnTabs.UseVisualStyleBackColor = true;
             // 
-            // chkDoubleClickClosesTab
+            // chkDoubleClickTogglesFullscreen
             // 
-            chkDoubleClickClosesTab._mice = MrngCheckBox.MouseState.OUT;
-            chkDoubleClickClosesTab.AutoSize = true;
-            chkDoubleClickClosesTab.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            chkDoubleClickClosesTab.Location = new System.Drawing.Point(3, 95);
-            chkDoubleClickClosesTab.Name = "chkDoubleClickClosesTab";
-            chkDoubleClickClosesTab.Size = new System.Drawing.Size(170, 17);
-            chkDoubleClickClosesTab.TabIndex = 5;
-            chkDoubleClickClosesTab.Text = "Double click on tab closes it";
-            chkDoubleClickClosesTab.UseVisualStyleBackColor = true;
+            chkDoubleClickTogglesFullscreen._mice = MrngCheckBox.MouseState.OUT;
+            chkDoubleClickTogglesFullscreen.AutoSize = true;
+            chkDoubleClickTogglesFullscreen.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            chkDoubleClickTogglesFullscreen.Location = new System.Drawing.Point(3, 95);
+            chkDoubleClickTogglesFullscreen.Name = "chkDoubleClickTogglesFullscreen";
+            chkDoubleClickTogglesFullscreen.Size = new System.Drawing.Size(286, 17);
+            chkDoubleClickTogglesFullscreen.TabIndex = 5;
+            chkDoubleClickTogglesFullscreen.Text = "Double click on an RDP tab toggles fullscreen";
+            chkDoubleClickTogglesFullscreen.UseVisualStyleBackColor = true;
             // 
             // chkShowProtocolOnTabs
             // 
@@ -195,7 +195,7 @@ namespace mRemoteNG.UI.Forms.OptionsPages
             pnlOptions.Controls.Add(lblPanelName);
             pnlOptions.Controls.Add(chkShowProtocolOnTabs);
             pnlOptions.Controls.Add(txtBoxPanelName);
-            pnlOptions.Controls.Add(chkDoubleClickClosesTab);
+            pnlOptions.Controls.Add(chkDoubleClickTogglesFullscreen);
             pnlOptions.Controls.Add(chkCreateEmptyPanelOnStart);
             pnlOptions.Controls.Add(chkBindConnectionsAndConfigPanels);
             pnlOptions.Controls.Add(chkShowLogonInfoOnTabs);
@@ -241,7 +241,7 @@ namespace mRemoteNG.UI.Forms.OptionsPages
         internal MrngCheckBox chkOpenNewTabRightOfSelected;
         internal MrngCheckBox chkAlwaysShowPanelSelectionDlg;
         internal MrngCheckBox chkShowLogonInfoOnTabs;
-        internal MrngCheckBox chkDoubleClickClosesTab;
+        internal MrngCheckBox chkDoubleClickTogglesFullscreen;
         internal MrngCheckBox chkShowProtocolOnTabs;
         private MrngCheckBox chkCreateEmptyPanelOnStart;
         private MrngCheckBox chkBindConnectionsAndConfigPanels;

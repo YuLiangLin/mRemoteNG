@@ -76,6 +76,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Self-Contained|x64'">
     <DefineConstants>PORTABLE</DefineConstants>
     <Optimize>True</Optimize>
+    <!-- .NET single-file publishing replaces ILMerge, which cannot merge this
+         .NET 10 apphost, native libraries, COM interop, and bundled content. -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <PublishTrimmed>false</PublishTrimmed>
+    <DebugType>None</DebugType>
+    <DebugSymbols>false</DebugSymbols>
     <PublishDir>bin\x64\Publish Self-Contained\</PublishDir>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <WarningsAsErrors />
@@ -93,6 +102,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Self-Contained|arm64'">
     <DefineConstants>PORTABLE</DefineConstants>
     <Optimize>True</Optimize>
+    <!-- Keep the ARM64 portable build aligned with the x64 single-file output. -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <PublishTrimmed>false</PublishTrimmed>
+    <DebugType>None</DebugType>
+    <DebugSymbols>false</DebugSymbols>
     <OutputPath>bin\arm64\Release Self-Contained\</OutputPath>
     <PublishDir>bin\arm64\Publish Self-Contained\</PublishDir>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
@@ -579,6 +596,14 @@
     <!-- Disable CET compatibility check in .NET 9 AppHost -->
     <CETCompat>false</CETCompat>
   </PropertyGroup>
+  <Target Name="CleanPortablePublishDirectory" BeforeTargets="PrepareForPublish" Condition="'$(Configuration)' == 'Release Self-Contained'">
+    <RemoveDir Directories="$(PublishDir)" />
+  </Target>
+  <Target Name="RemoveSymbolsFromPortablePublish" AfterTargets="ComputeResolvedFilesToPublishList" Condition="'$(Configuration)' == 'Release Self-Contained'">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="'%(Extension)' == '.pdb'" />
+    </ItemGroup>
+  </Target>
   <Target Name="PublishAfterBuild" AfterTargets="Build" Condition="'$(Configuration)' == 'Release Self-Contained'">
     <Message Text="Publishing self-contained application for $(Platform)..." Importance="high" />
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="Publish" Properties="Configuration=$(Configuration);Platform=$(Platform);NoBuild=true;NoRestore=true" />

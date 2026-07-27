@@ -1997,11 +1997,11 @@ namespace mRemoteNG.Resources.Language {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Double click on tab closes it.
+        ///   Looks up a localized string similar to Double click on an RDP tab toggles fullscreen.
         /// </summary>
-        internal static string DoubleClickTabClosesIt {
+        internal static string DoubleClickTabTogglesFullscreen {
             get {
-                return ResourceManager.GetString("DoubleClickTabClosesIt", resourceCulture);
+                return ResourceManager.GetString("DoubleClickTabTogglesFullscreen", resourceCulture);
             }
         }
         

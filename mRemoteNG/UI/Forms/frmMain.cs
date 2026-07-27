@@ -724,6 +724,11 @@ namespace mRemoteNG.UI.Forms
         private void PnlDock_ActiveDocumentChanged(object sender, EventArgs e)
         {
             ActivateConnection();
+            UpdateSessionsMenuState();
+        }
+
+        internal void UpdateSessionsMenuState()
+        {
             sessionsMenu.UpdateMenuState();
         }
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using mRemoteNG.App;
+using mRemoteNG.App.Info;
 using mRemoteNG.Config.Connections.Multiuser;
 using mRemoteNG.Config.DatabaseConnectors;
 using mRemoteNG.Properties;
@@ -412,7 +413,7 @@ namespace mRemoteNG.UI.Forms.OptionsPages
                 string? currentSelection = DCMSetupddschema.SelectedValue?.ToString();
 
                 // Get the application's running directory
-                string schemasFolder = Path.Combine(Application.StartupPath, "Schemas");
+                string schemasFolder = Path.Combine(GeneralAppInfo.HomePath ?? Application.StartupPath, "Schemas");
 
                 // Check if Schemas folder exists
                 if (!Directory.Exists(schemasFolder))

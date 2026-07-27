@@ -122,12 +122,12 @@ namespace mRemoteNG.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool DoubleClickOnTabClosesIt {
+        public bool DoubleClickOnTabTogglesFullscreen {
             get {
-                return ((bool)(this["DoubleClickOnTabClosesIt"]));
+                return ((bool)(this["DoubleClickOnTabTogglesFullscreen"]));
             }
             set {
-                this["DoubleClickOnTabClosesIt"] = value;
+                this["DoubleClickOnTabTogglesFullscreen"] = value;
             }
         }
         
