@@ -92,7 +92,7 @@ namespace mRemoteNGTests.Connection.Protocol
         }
 
         [Test]
-        public void Resize_WhenWindowStateChanges_SchedulesResizeAfterLayoutSettles()
+        public void Resize_WhenWindowStateChanges_CallsDoResizeClient()
         {
             // Arrange - Start in Normal state
             _testForm.WindowState = FormWindowState.Normal;
@@ -104,14 +104,8 @@ namespace mRemoteNGTests.Connection.Protocol
             _rdpProtocol.SimulateResize(null, EventArgs.Empty);
 
             // Assert
-            Assert.That(_rdpProtocol.DoResizeClientCallCount, Is.EqualTo(0),
-                "DoResizeClient should wait until the new window layout has settled");
-            Assert.That(_rdpProtocol.DebounceScheduledCount, Is.EqualTo(1),
-                "Window state changes should schedule a debounced session resize");
-
-            _rdpProtocol.SimulateDebounceTimerElapsed();
             Assert.That(_rdpProtocol.DoResizeClientCallCount, Is.EqualTo(1),
-                "DoResizeClient should run once after the debounce interval");
+                "DoResizeClient should be called when window state changes");
         }
 
         [Test]
@@ -257,7 +251,6 @@ namespace mRemoteNGTests.Connection.Protocol
             // Act - Maximize
             _testForm.WindowState = FormWindowState.Maximized;
             _rdpProtocol.SimulateResize(null, EventArgs.Empty);
-            _rdpProtocol.SimulateDebounceTimerElapsed();
 
             var resizeClientCountAfterMaximize = _rdpProtocol.DoResizeClientCallCount;
             _rdpProtocol.ResetResizeCounts();
@@ -265,7 +258,6 @@ namespace mRemoteNGTests.Connection.Protocol
             // Act - Restore
             _testForm.WindowState = FormWindowState.Normal;
             _rdpProtocol.SimulateResize(null, EventArgs.Empty);
-            _rdpProtocol.SimulateDebounceTimerElapsed();
 
             // Assert
             Assert.That(resizeClientCountAfterMaximize, Is.EqualTo(1),
@@ -292,7 +284,6 @@ namespace mRemoteNGTests.Connection.Protocol
             // Act - Restore from minimize
             _testForm.WindowState = FormWindowState.Normal;
             _rdpProtocol.SimulateResize(null, EventArgs.Empty);
-            _rdpProtocol.SimulateDebounceTimerElapsed();
 
             // Assert
             Assert.That(resizeCallsWhileMinimized, Is.EqualTo(0),
@@ -329,7 +320,7 @@ namespace mRemoteNGTests.Connection.Protocol
                 if (_lastWindowState != _mainForm.WindowState)
                 {
                     _lastWindowState = _mainForm.WindowState;
-                    ScheduleDebouncedResize();
+                    DoResizeClient();
                 }
             }
 
@@ -355,7 +346,6 @@ namespace mRemoteNGTests.Connection.Protocol
             {
                 if (!_hasPendingResize) return;
                 _hasPendingResize = false;
-                DoResizeControl();
                 DoResizeClient();
             }
 

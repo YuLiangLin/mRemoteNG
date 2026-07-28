@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.78.2-yll.2] - 2026-07-28
+## [1.78.3-yll.2] - 2026-07-28
 ### Added
 - Added true fullscreen for every connection tab: RDP keeps its native fullscreen mode, while SSH, VNC, and other embedded sessions use a dedicated fullscreen host.
 - Added F11 and Ctrl+Alt+Enter fullscreen shortcuts plus a compact auto-hiding top-edge exit control.
@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Fixed
 - Fixed portable single-file builds saving connection and settings files under the temporary .NET extraction directory instead of beside the executable.
 - Fixed embedded remote-session controls not resizing when entering or leaving fullscreen.
+- Fixed update checks failing to parse Nightly and `-yll` application versions.
+- Preserved native RDP fullscreen and hid its unsupported minimize action, which could leave the main window on a blank connection surface.
 
 ## [1.78.2]
 ### Fixed

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Versioning;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
 using static System.Environment;
@@ -54,13 +55,50 @@ namespace mRemoteNG.App.Info
 
         public static string PuttyPath => puttyPath;
 
-        public static Version? GetApplicationVersion()
-        {
-            string cleanedVersion = ApplicationVersion.Split(' ')[0].Replace("(", "").Replace(")", "").Replace("Build", "");
-            cleanedVersion = cleanedVersion + "." + ApplicationVersion.Split(' ')[^1].Replace(")", "");
+        public static Version? GetApplicationVersion() => ParseApplicationVersion(ApplicationVersion);
 
-            _ = System.Version.TryParse(cleanedVersion, out Version? parsedVersion);
-            return parsedVersion;
+        internal static Version? ParseApplicationVersion(string? applicationVersion)
+        {
+            if (string.IsNullOrWhiteSpace(applicationVersion))
+            {
+                return null;
+            }
+
+            Match forkVersionMatch = Regex.Match(
+                applicationVersion,
+                @"(?<base>\d+\.\d+\.\d+)-yll\.(?<release>\d+)",
+                RegexOptions.CultureInvariant);
+            if (forkVersionMatch.Success &&
+                System.Version.TryParse(
+                    $"{forkVersionMatch.Groups["base"].Value}.{forkVersionMatch.Groups["release"].Value}",
+                    out System.Version? forkVersion))
+            {
+                return forkVersion;
+            }
+
+            Match nightlyVersionMatch = Regex.Match(
+                applicationVersion,
+                @"(?<base>\d+\.\d+\.\d+)\s+\(Nightly Build\s+(?<build>\d+)\)",
+                RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+            if (nightlyVersionMatch.Success &&
+                System.Version.TryParse(
+                    $"{nightlyVersionMatch.Groups["base"].Value}.{nightlyVersionMatch.Groups["build"].Value}",
+                    out System.Version? nightlyVersion))
+            {
+                return nightlyVersion;
+            }
+
+            Match numericVersionMatch = Regex.Match(
+                applicationVersion,
+                @"(?<!\d)(?<version>\d+(?:\.\d+){1,3})(?![\d.-])",
+                RegexOptions.CultureInvariant);
+
+            return numericVersionMatch.Success &&
+                   System.Version.TryParse(
+                       numericVersionMatch.Groups["version"].Value,
+                       out System.Version? numericVersion)
+                ? numericVersion
+                : null;
         }
     }
 }
