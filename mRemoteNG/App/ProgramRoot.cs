@@ -40,6 +40,12 @@ namespace mRemoteNG.App
             // PerMonitorV2 awareness; this call keeps the WinForms runtime in sync.
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
 
+            if (PortableUpdateInstaller.TryRun(args))
+            {
+                return;
+            }
+
+            PortableUpdateInstaller.CompletePendingCleanup();
             InitializeSqliteProvider();
 
             // Ensure the real entry point is definitely STA

@@ -11,10 +11,6 @@ using mRemoteNG.Properties;
 using System.Runtime.Versioning;
 #if !PORTABLE
 using mRemoteNG.Tools;
-
-#else
-using System.Windows.Forms;
-
 #endif
 // ReSharper disable ArrangeAccessorOwnerBody
 
@@ -116,25 +112,13 @@ namespace mRemoteNG.App.Update
 #if !PORTABLE
             CurrentUpdateInfo.UpdateFilePath = Path.Combine(Path.GetTempPath(), Path.ChangeExtension(Path.GetRandomFileName(), "msi"));
 #else
-            var sfd = new SaveFileDialog
-            {
-                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-                FileName = CurrentUpdateInfo.FileName,
-                RestoreDirectory = true
-            };
-            if (sfd.ShowDialog() == DialogResult.OK)
-            {
-                CurrentUpdateInfo.UpdateFilePath = sfd.FileName;
-            }
-            else
-            {
-                return;
-            }
+            CurrentUpdateInfo.UpdateFilePath = PortableUpdateInstaller.CreateDownloadPath(CurrentUpdateInfo.FileName);
 #endif
             try
             {
                 _getUpdateInfoCancelToken = new CancellationTokenSource();
                 using HttpResponseMessage response = await _httpClient.GetAsync(CurrentUpdateInfo.DownloadAddress, HttpCompletionOption.ResponseHeadersRead, _getUpdateInfoCancelToken.Token);
+                response.EnsureSuccessStatusCode();
                 byte[] buffer = new byte[_bufferLength];
                 long totalBytes = response.Content.Headers.ContentLength ?? 0;
                 long readBytes = 0L;
@@ -144,7 +128,7 @@ namespace mRemoteNG.App.Update
                     await using FileStream fileStream = new(CurrentUpdateInfo.UpdateFilePath, FileMode.Create,
                         FileAccess.Write, FileShare.None, _bufferLength, true);
 
-                    while (readBytes <= totalBytes || !_getUpdateInfoCancelToken.IsCancellationRequested)
+                    while (!_getUpdateInfoCancelToken.IsCancellationRequested)
                     {
                         int bytesRead =
                             await httpStream.ReadAsync(buffer.AsMemory(0, _bufferLength), _getUpdateInfoCancelToken.Token);
@@ -158,8 +142,11 @@ namespace mRemoteNG.App.Update
 
                         readBytes += bytesRead;
 
-                        int percentComplete = (int)(readBytes * 100 / totalBytes);
-                        progress.Report(percentComplete);
+                        if (totalBytes > 0)
+                        {
+                            int percentComplete = (int)(readBytes * 100 / totalBytes);
+                            progress.Report(Math.Min(percentComplete, 100));
+                        }
                     }
                 }
 
@@ -185,9 +172,28 @@ namespace mRemoteNG.App.Update
                 await using FileStream stream = File.OpenRead(CurrentUpdateInfo.UpdateFilePath);
                 byte[] hash = await checksum.ComputeHashAsync(stream);
                 string hashString = BitConverter.ToString(hash).Replace("-", "").ToUpperInvariant();
-                if (!hashString.Equals(CurrentUpdateInfo.Checksum))
+                if (!hashString.Equals(CurrentUpdateInfo.Checksum, StringComparison.OrdinalIgnoreCase))
                     throw new Exception("SHA512 Hashes didn't match!");
-            } finally{
+            }
+            catch
+            {
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(CurrentUpdateInfo.UpdateFilePath) &&
+                        File.Exists(CurrentUpdateInfo.UpdateFilePath))
+                    {
+                        File.Delete(CurrentUpdateInfo.UpdateFilePath);
+                    }
+                }
+                catch
+                {
+                    // Preserve the original download or validation exception.
+                }
+
+                throw;
+            }
+            finally
+            {
                 _getUpdateInfoCancelToken?.Dispose();
                 _getUpdateInfoCancelToken = null;
             }

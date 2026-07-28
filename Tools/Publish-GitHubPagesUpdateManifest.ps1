@@ -1,4 +1,4 @@
-#Requires -Version 6.0
+#Requires -Version 7.0
 param(
     [Parameter(Mandatory)]
     [string]$RepositoryOwner,
@@ -13,158 +13,84 @@ param(
     [string]$Version,
 
     [Parameter(Mandatory)]
-    [string]$Build,
+    [string]$ReleaseAsset,
 
     [Parameter(Mandatory)]
-    [string]$OutputDir,
-
-    [ValidateSet("Stable","Preview","Nightly")]
-    [string]$Channel = "Stable",
-
-    [ValidateSet("False","True")]
-    [string]$Publish = "False"
+    [string]$OutputDir
 )
 
 $ErrorActionPreference = "Stop"
 
-if ($IsWindows -ne $true) {
-    throw "This script only supports Windows PowerShell/Core runners."
+$parsedVersion = $null
+if (-not [System.Version]::TryParse($Version, [ref]$parsedVersion)) {
+    throw "Version '$Version' is not a valid numeric System.Version value."
 }
 
-if (-not $env:GITHUB_TOKEN) {
-    throw "GITHUB_TOKEN is required to read release assets."
+$asset = Get-Item -LiteralPath $ReleaseAsset
+if ($asset.Name -ne "mRemoteNG.exe") {
+    throw "The portable release asset must be named mRemoteNG.exe."
 }
 
-$headers = @{
-    Authorization = "Bearer $env:GITHUB_TOKEN"
-    "User-Agent" = "mRemoteNG-workflow"
-    Accept = "application/vnd.github+json"
-}
+$ownerForHost = $RepositoryOwner.ToLowerInvariant()
+$releaseUrl = "https://github.com/$RepositoryOwner/$RepositoryName/releases/tag/$TagName"
+$downloadUrl = "https://github.com/$RepositoryOwner/$RepositoryName/releases/download/$TagName/$($asset.Name)"
+$pagesBaseUrl = "https://$ownerForHost.github.io/$RepositoryName/"
+$changelogUrl = "${pagesBaseUrl}changelog.txt"
+$checksum = (Get-FileHash -LiteralPath $asset.FullName -Algorithm SHA512).Hash
 
-function New-UpdateFileContent {
-    param(
-        [string]$Version,
-        [string]$DownloadUrl,
-        [string]$ChangelogUrl,
-        [string]$Checksum,
-        [string]$CertificateThumbprint
-    )
+New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 
-    $lines = @(
-        "Version: $Version"
-        "dURL: $DownloadUrl"
-        "clURL: $ChangelogUrl"
-        "Checksum: $Checksum"
-    )
+$manifest = @(
+    "Version: $Version"
+    "dURL: $downloadUrl"
+    "clURL: $changelogUrl"
+    "Checksum: $checksum"
+) -join "`n"
 
-    if ($PSBoundParameters.ContainsKey("CertificateThumbprint") -and -not [string]::IsNullOrWhiteSpace($CertificateThumbprint)) {
-        $lines = @(
-            $lines[0],
-            $lines[1],
-            $lines[2],
-            "CertificateThumbprint: $CertificateThumbprint",
-            $lines[3]
-        )
-    }
+Set-Content -LiteralPath (Join-Path $OutputDir "update-portable.txt") `
+    -Value "$manifest`n" -NoNewline -Encoding utf8
 
-    return ($lines -join "`r`n") + "`r`n"
-}
+$changelog = @"
+mRemoteNG fork $TagName
 
-function Get-AssetByExtension {
-    param(
-        [Parameter(Mandatory)]
-        [array]$Assets,
-        [Parameter(Mandatory)]
-        [string]$Extension
-    )
+Version: $Version
+Release notes: $releaseUrl
+Source code: https://github.com/$RepositoryOwner/$RepositoryName/tree/$TagName
+"@
 
-    return $Assets |
-        Where-Object { $_.name -like "*$Extension" -and $_.name -notlike "*-symbols-*.zip" } |
-        Sort-Object { [datetime]$_.created_at } -Descending |
-        Select-Object -First 1
-}
+Set-Content -LiteralPath (Join-Path $OutputDir "changelog.txt") `
+    -Value $changelog -Encoding utf8
 
-Write-Host "Load release metadata for tag: $TagName"
-$encodedTag = [uri]::EscapeDataString($TagName)
-$releaseUrl = "https://api.github.com/repos/$RepositoryOwner/$RepositoryName/releases/tags/$encodedTag"
-$release = Invoke-RestMethod -Uri $releaseUrl -Headers $headers
-if ($null -eq $release) {
-    throw "Could not resolve release: $releaseUrl"
-}
+$encodedTag = [System.Net.WebUtility]::HtmlEncode($TagName)
+$encodedVersion = [System.Net.WebUtility]::HtmlEncode($Version)
+$encodedReleaseUrl = [System.Net.WebUtility]::HtmlEncode($releaseUrl)
+$encodedDownloadUrl = [System.Net.WebUtility]::HtmlEncode($downloadUrl)
+$encodedChecksum = [System.Net.WebUtility]::HtmlEncode($checksum)
 
-if ($release.assets.Count -eq 0) {
-    throw "No release assets found for $RepositoryOwner/$RepositoryName@$TagName."
-}
+$indexHtml = @"
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>mRemoteNG Fork Updates</title>
+  <style>
+    body { max-width: 760px; margin: 48px auto; padding: 0 24px; font: 16px/1.6 system-ui, sans-serif; color: #172033; }
+    a.button { display: inline-block; padding: 10px 16px; border-radius: 8px; background: #0969da; color: white; text-decoration: none; }
+    code { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <h1>mRemoteNG Fork Updates</h1>
+  <p>Latest release: <strong>$encodedTag</strong> (internal version $encodedVersion)</p>
+  <p><a class="button" href="$encodedDownloadUrl">Download mRemoteNG.exe</a></p>
+  <p><a href="$encodedReleaseUrl">Release notes and source code</a></p>
+  <h2>SHA-512</h2>
+  <code>$encodedChecksum</code>
+</body>
+</html>
+"@
 
-$fullVersion = "$Version.$Build"
-$changelogUrl = "https://raw.githubusercontent.com/$RepositoryOwner/$RepositoryName/$encodedTag/CHANGELOG.md"
-$tmpDir = Join-Path $env:TEMP "mremote-update-$([guid]::NewGuid())"
-New-Item -ItemType Directory -Path $tmpDir | Out-Null
-
-try {
-    $portableAsset = Get-AssetByExtension -Assets $release.assets -Extension ".zip"
-    $normalAsset = Get-AssetByExtension -Assets $release.assets -Extension ".msi"
-
-    $publishItems = @()
-
-    if ($null -ne $portableAsset) {
-        Write-Host "Generate portable update check file from $($portableAsset.name)"
-        gh release download $TagName --repo "$RepositoryOwner/$RepositoryName" --pattern $portableAsset.name --dir $tmpDir
-        $portablePath = Join-Path $tmpDir $portableAsset.name
-        $portableHash = (Get-FileHash -Path $portablePath -Algorithm SHA512).Hash
-
-        $portableContent = New-UpdateFileContent -Version $fullVersion -DownloadUrl $portableAsset.browser_download_url -ChangelogUrl $changelogUrl -Checksum $portableHash
-
-        New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
-
-        $portableFile = Join-Path $OutputDir "update-portable.txt"
-        if ($Channel -eq "Preview") { $portableFile = Join-Path $OutputDir "preview-update-portable.txt" }
-        elseif ($Channel -eq "Nightly") { $portableFile = Join-Path $OutputDir "nightly-update-portable.txt" }
-
-        Set-Content -Path $portableFile -Value $portableContent -NoNewline -Encoding UTF8
-        $publishItems += $portableFile
-    }
-
-    if ($null -ne $normalAsset) {
-        Write-Host "Generate normal update check file from $($normalAsset.name)"
-        gh release download $TagName --repo "$RepositoryOwner/$RepositoryName" --pattern $normalAsset.name --dir $tmpDir
-        $normalPath = Join-Path $tmpDir $normalAsset.name
-        $normalHash = (Get-FileHash -Path $normalPath -Algorithm SHA512).Hash
-        $thumbprint = $null
-        try {
-            $signature = Get-AuthenticodeSignature -FilePath $normalPath
-            if ($signature.Status -eq "Valid") {
-                $thumbprint = $signature.SignerCertificate.Thumbprint
-            }
-        }
-        catch {
-            Write-Host "Warning: unable to read Authenticode signature for $($normalAsset.name), will omit CertificateThumbprint."
-        }
-
-        $normalContent = New-UpdateFileContent -Version $fullVersion -DownloadUrl $normalAsset.browser_download_url -ChangelogUrl $changelogUrl -Checksum $normalHash -CertificateThumbprint $thumbprint
-
-        New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
-
-        $normalFile = Join-Path $OutputDir "update.txt"
-        if ($Channel -eq "Preview") { $normalFile = Join-Path $OutputDir "preview-update.txt" }
-        elseif ($Channel -eq "Nightly") { $normalFile = Join-Path $OutputDir "nightly-update.txt" }
-
-        Set-Content -Path $normalFile -Value $normalContent -NoNewline -Encoding UTF8
-        $publishItems += $normalFile
-    }
-
-    if ($publishItems.Count -eq 0) {
-        throw "No supported release assets (.zip or .msi) found for tag $TagName."
-    }
-
-    if ($Publish -eq "True") {
-        gh release view $TagName --repo "$RepositoryOwner/$RepositoryName" --json body | Out-Null
-        Write-Host "Manifest files:"
-        $publishItems | ForEach-Object { Write-Host " - $_" }
-    }
-}
-finally {
-    if (Test-Path $tmpDir) {
-        Remove-Item -Recurse -Force $tmpDir
-    }
-}
+Set-Content -LiteralPath (Join-Path $OutputDir "index.html") `
+    -Value $indexHtml -Encoding utf8
+New-Item -ItemType File -Path (Join-Path $OutputDir ".nojekyll") -Force | Out-Null

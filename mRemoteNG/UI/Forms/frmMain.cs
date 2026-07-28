@@ -490,7 +490,7 @@ namespace mRemoteNG.UI.Forms
 
             Hide();
 
-            if (Properties.OptionsAppearancePage.Default.CloseToTray)
+            if (Properties.OptionsAppearancePage.Default.CloseToTray && !Shutdown.UpdatePending)
             {
                 Runtime.NotificationAreaIcon ??= new NotificationAreaIcon();
 

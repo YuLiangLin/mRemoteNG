@@ -1,352 +1,211 @@
-name: Build_and_Release_mR-NB_MultiDeploy
+name: Release mRemoteNG Fork
+
+run-name: Release ${{ github.event.inputs.release_tag || github.ref_name }}
+
 on:
   push:
-    branches:
-      - v1.78.2-dev
-
+    tags:
+      - "v*.*.*-yll.*"
   workflow_dispatch:
     inputs:
-      release_flag:
-        description: 'Run NB release'
-        required: false
-        default: 'true'
-      release_channel:
-        description: 'Update channel for website feed (Stable / Preview / Nightly)'
-        required: false
-        default: 'Stable'
-      publish_pages_update:
-        description: 'Write update.txt to gh-pages'
-        required: false
-        default: 'true'
+      release_tag:
+        description: "Existing tag to release, for example v1.78.2-yll.1"
+        required: true
+        type: string
 
 permissions:
-  contents: write
-  
+  contents: read
+
+concurrency:
+  group: mremoteng-release-${{ github.event.inputs.release_tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ github.event.inputs.release_tag || github.ref_name }}
+
 jobs:
-  NB-Build-and-Release:
-    strategy:
-      matrix:
-        include:
-          # Framework-Dependent builds (requires .NET runtime on user machine)
-          - runner: windows-latest
-            platform: x64
-            arch: x64
-            deployment: framework-dependent
-            deploy_suffix: FD
-          - runner: windows-11-arm
-            platform: ARM64
-            arch: arm64
-            deployment: framework-dependent
-            deploy_suffix: FD
-          # Self-Contained builds (includes .NET runtime)
-          - runner: windows-latest
-            platform: x64
-            arch: x64
-            deployment: self-contained
-            deploy_suffix: SC
-          - runner: windows-11-arm
-            platform: ARM64
-            arch: arm64
-            deployment: self-contained
-            deploy_suffix: SC
-    runs-on: ${{ matrix.runner }}
-    # Only run if:
-    # - manual dispatch, OR
-    # - push event AND commit message contains "NB release"
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && contains(github.event.head_commit.message, 'NB release'))
+  build-release:
+    name: Build and publish single EXE
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    outputs:
+      release_tag: ${{ steps.release.outputs.tag }}
+      assembly_version: ${{ steps.release.outputs.assembly_version }}
 
     steps:
-      - name: (01) Checkout Repository
+      - name: Check out release tag
         uses: actions/checkout@v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
 
-        # 2. Auto-detect solution file (Supports legacy .sln modern VS2026 .slnx)
-      - name: (02) Find solution file
-        shell: pwsh
-        run: |
-          Write-Host "Locating solution file (.sln or .slnx)..."
-          $sln = Get-ChildItem -Path . -Filter "*.sln*" -File -Recurse | 
-                 Where-Object { $_.Extension -match '^\.slnx?$' } | 
-                 Select-Object -First 1
-
-          if ($sln) {
-            "SOLUTION_FILE=$($sln.Name)" | Out-File -FilePath $env:GITHUB_ENV -Append
-            Write-Host "Located file: $($sln.Name)" -ForegroundColor Green
-          } else {
-            Write-Host "ERROR: Could not locate a .sln or .slnx file!" -ForegroundColor Red
-            exit 1
-          }
-
-      - name: (02) Install .NET 10 SDK
+      - name: Set up .NET 10
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: "10.0.x"
 
-      # 6. Install Visual Studio 2026 Build Tools
-      - name: (03) Install Visual Studio 2026 Build Tools
+      - name: Resolve release version
+        id: release
         shell: pwsh
         run: |
-          Write-Host "Installing VS 2026 Build Tools..."
-          choco install visualstudio2026buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --includeRecommended --quiet" -y --ignore-package-exit-codes=3010
-          Write-Host "VS 2026 Build Tools installation completed"
-          
-      - name: (04) Install and run dotnet-t4 to transform T4 templates
+          $tag = $env:RELEASE_TAG
+          if ($tag -notmatch '^v(?<base>\d+\.\d+\.\d+)-yll\.(?<fork>\d+)$') {
+            throw "Release tag '$tag' must match v<major>.<minor>.<patch>-yll.<release>, for example v1.78.2-yll.1."
+          }
+
+          $forkRelease = [int]$Matches.fork
+          if ($forkRelease -gt 65534) {
+            throw "The fork release component must be between 0 and 65534."
+          }
+
+          $assemblyVersion = "$($Matches.base).$forkRelease"
+          $informationalVersion = "$($Matches.base)-yll.$forkRelease+$($env:GITHUB_SHA.Substring(0, 7))"
+
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "assembly_version=$assemblyVersion" >> $env:GITHUB_OUTPUT
+          "informational_version=$informationalVersion" >> $env:GITHUB_OUTPUT
+
+      - name: Locate MSBuild
+        id: msbuild
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path -LiteralPath $vswhere)) {
+            throw "vswhere.exe was not found on the GitHub-hosted Windows runner."
+          }
+
+          $msbuild = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe" |
+            Select-Object -First 1
+          if ([string]::IsNullOrWhiteSpace($msbuild)) {
+            throw "MSBuild was not found on the GitHub-hosted Windows runner."
+          }
+
+          "path=$msbuild" >> $env:GITHUB_OUTPUT
+
+      - name: Generate and stamp AssemblyInfo
         shell: pwsh
         run: |
           dotnet tool install --global dotnet-t4
-          # Refresh PATH to include global tools
           $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
-          $ttFile = "$env:GITHUB_WORKSPACE\mRemoteNG\Properties\AssemblyInfo.tt"
-          # VS Enterprise 2022 assemblies
-          $vsPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\PublicAssemblies"
-          Write-Host "Transforming T4 template"
-          t4 $ttFile -P platformType=${{ matrix.platform }} -r:"$vsPath\EnvDTE.dll" -r:"$vsPath\Microsoft.VisualStudio.Interop.dll"
+
+          $assemblyTemplate = Join-Path $env:GITHUB_WORKSPACE "mRemoteNG\Properties\AssemblyInfo.tt"
+          t4 $assemblyTemplate -P platformType=x64
+
+          $assemblyInfo = Join-Path $env:GITHUB_WORKSPACE "mRemoteNG\Properties\AssemblyInfo.cs"
+          $content = Get-Content -LiteralPath $assemblyInfo -Raw
+          $content = $content -replace 'AssemblyVersion\("[^"]+"\)', 'AssemblyVersion("${{ steps.release.outputs.assembly_version }}")'
+          $content = $content -replace 'AssemblyFileVersion\("[^"]+"\)', 'AssemblyFileVersion("${{ steps.release.outputs.assembly_version }}")'
+          $content = $content -replace 'AssemblyInformationalVersion\("[^"]+"\)', 'AssemblyInformationalVersion("${{ steps.release.outputs.informational_version }} x64")'
+          Set-Content -LiteralPath $assemblyInfo -Value $content -Encoding utf8
+
+      - name: Restore and publish
+        shell: pwsh
+        run: |
+          $project = Join-Path $env:GITHUB_WORKSPACE "mRemoteNG\mRemoteNG.csproj"
+          & '${{ steps.msbuild.outputs.path }}' $project `
+            /restore `
+            /t:Build `
+            /p:Configuration="Release Self-Contained" `
+            /p:Platform=x64 `
+            /p:TransformOnBuild=false `
+            /p:SelfContained=true `
+            /p:PublishSingleFile=true `
+            /verbosity:minimal
+          if ($LASTEXITCODE -ne 0) {
+            throw "MSBuild publish failed with exit code $LASTEXITCODE."
+          }
+
+      - name: Prepare Release and GitHub Pages files
+        shell: pwsh
+        run: |
+          $publishDir = Join-Path $env:GITHUB_WORKSPACE "mRemoteNG\bin\x64\Publish Self-Contained"
+          $publishedFiles = @(Get-ChildItem -LiteralPath $publishDir -File)
+          if ($publishedFiles.Count -ne 1 -or $publishedFiles[0].Name -ne "mRemoteNG.exe") {
+            $names = $publishedFiles.Name -join ", "
+            throw "Expected exactly one published file named mRemoteNG.exe, but found: $names"
+          }
+
+          $releaseDir = Join-Path $env:GITHUB_WORKSPACE "release-output\release"
+          $pagesDir = Join-Path $env:GITHUB_WORKSPACE "release-output\pages"
+          New-Item -ItemType Directory -Path $releaseDir, $pagesDir -Force | Out-Null
+
+          $releaseExe = Join-Path $releaseDir "mRemoteNG.exe"
+          Copy-Item -LiteralPath $publishedFiles[0].FullName -Destination $releaseExe
+
+          $hash = (Get-FileHash -LiteralPath $releaseExe -Algorithm SHA512).Hash
+          Set-Content -LiteralPath (Join-Path $releaseDir "mRemoteNG.exe.sha512") `
+            -Value "$hash  mRemoteNG.exe" -Encoding ascii
+
+          & "$env:GITHUB_WORKSPACE\Tools\Publish-GitHubPagesUpdateManifest.ps1" `
+            -RepositoryOwner '${{ github.repository_owner }}' `
+            -RepositoryName '${{ github.event.repository.name }}' `
+            -TagName '${{ steps.release.outputs.tag }}' `
+            -Version '${{ steps.release.outputs.assembly_version }}' `
+            -ReleaseAsset $releaseExe `
+            -OutputDir $pagesDir
+
+          Get-Content -LiteralPath (Join-Path $pagesDir "update-portable.txt")
+
+      - name: Create or update GitHub Release
+        shell: pwsh
         env:
-          PLATFORM: '${{ matrix.platform }}'
-  
-      - name: (05) Cache NuGet Packages
-        uses: actions/cache@v6
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-${{ matrix.arch }}-${{ matrix.deployment }}-nuget-${{ hashFiles('**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.arch }}-${{ matrix.deployment }}-nuget-
-            ${{ runner.os }}-${{ matrix.arch }}-nuget-
-            
-      - name: (06) Restore NuGet Packages
-        shell: pwsh
-        run: dotnet restore
-        
-      - name: (07) Build Framework-Dependent Release
-        if: matrix.deployment == 'framework-dependent'
-        shell: pwsh
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          msbuild "$Env:GITHUB_WORKSPACE\$($sln.Name)" -p:Configuration="Release" -p:Platform=${{ matrix.platform }} /verbosity:minimal
+          $tag = '${{ steps.release.outputs.tag }}'
+          $releaseExe = "$env:GITHUB_WORKSPACE\release-output\release\mRemoteNG.exe"
+          $checksum = "$env:GITHUB_WORKSPACE\release-output\release\mRemoteNG.exe.sha512"
+          $title = "mRemoteNG $tag"
 
-      - name: (08) Build Self-Contained Release
-        if: matrix.deployment == 'self-contained'
-        shell: pwsh
-        run: |
-          msbuild "$Env:GITHUB_WORKSPACE\mRemoteNG.sln" /t:Publish /p:Configuration="Release Self-Contained" -p:Platform=${{ matrix.platform }} /verbosity:minimal /p:SelfContained=true /p:PublishDir="bin\${{ matrix.platform }}\Release"
-                
-      - name: (09) Release Information
-        id: version
-        shell: pwsh
-        run: |
-          $assemblyInfoPath = "${{ github.workspace }}\mRemoteNG\Properties\AssemblyInfo.cs"
-          $line = Get-Content $assemblyInfoPath | Where-Object { $_ -match 'AssemblyVersion\("(.+?)"\)' }
-          if ($line -match 'AssemblyVersion\("(?<ver>\d+\.\d+\.\d+)\.(?<build>\d+)"\)') {
-            $version = $matches['ver']
-            $build = $matches['build']
-          } else {
-            throw "Could not extract version and build number"
+          gh release view $tag --repo '${{ github.repository }}' *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag $releaseExe $checksum --clobber --repo '${{ github.repository }}'
+            gh release edit $tag --title $title --repo '${{ github.repository }}'
           }
-          $date = Get-Date -Format "yyyyMMdd"
-          $zipName = "mRemoteNG-$date-v$version-NB-$build-${{ matrix.arch }}-${{ matrix.deploy_suffix }}.zip"
-          $tag = "$date-v$version-NB-($build)"
-          $message = git log -1 --pretty=%B
-          echo "message=$message" >> $env:GITHUB_OUTPUT
-          echo "zipname=$zipName" >> $env:GITHUB_OUTPUT
-          echo "version=$version" >> $env:GITHUB_OUTPUT
-          echo "build=$build" >> $env:GITHUB_OUTPUT
-          echo "tag=$tag" >> $env:GITHUB_OUTPUT
-          echo "deployment=${{ matrix.deployment }}" >> $env:GITHUB_OUTPUT
+          else {
+            gh release create $tag $releaseExe $checksum `
+              --verify-tag `
+              --generate-notes `
+              --title $title `
+              --repo '${{ github.repository }}'
+          }
 
-      - name: (10) Extract Changelog Section
-        id: changelog
-        shell: pwsh
-        run: |
-          $changelogPath = "$env:GITHUB_WORKSPACE\CHANGELOG.md"
-          $lines = Get-Content $changelogPath
-      
-          $startIndex = -1
-          for ($i = 0; $i -lt $lines.Count; $i++) {
-            if ($lines[$i] -match '^## \[') {
-              $startIndex = $i
-              break
-            }
-          }
-      
-          if ($startIndex -eq -1) {
-            throw "No version header found in CHANGELOG.md"
-          }
-      
-          $section = @()
-          for ($i = $startIndex + 1; $i -lt $lines.Count; $i++) {
-            if ($lines[$i] -match '^## ') {
-              break
-            }
-            $section += $lines[$i]
-          }
-      
-          $joined = $section -join "`n"
-          echo "log<<EOF" >> $env:GITHUB_OUTPUT
-          echo $joined >> $env:GITHUB_OUTPUT
-          echo "EOF" >> $env:GITHUB_OUTPUT
-                
-      - name: (11) Create Zip File
-        shell: pwsh
-        run: |
-          $sourceDir = "$Env:GITHUB_WORKSPACE\mRemoteNG\bin\${{ matrix.platform }}\Release"
-          Compress-Archive -Path "$sourceDir\*" -DestinationPath ${{ steps.version.outputs.zipname }}
-          echo "File: ${{ steps.version.outputs.zipname }}"
-          
-          # Show file size
-          $fileSize = (Get-Item ${{ steps.version.outputs.zipname }}).Length / 1MB
-          echo "Size: $([math]::Round($fileSize, 2)) MB"
-
-      - name: (10) Upload artifacts for combination
+      - name: Upload GitHub Pages content
         uses: actions/upload-artifact@v7
         with:
-          name: release-${{ matrix.arch }}-${{ matrix.deploy_suffix }}
-          path: ${{ steps.version.outputs.zipname }}
-          retention-days: 1
+          name: github-pages-update
+          path: release-output/pages
+          if-no-files-found: error
+          retention-days: 7
 
-  Create-Combined-Release:
-    outputs:
-      release_tag: ${{ steps.version.outputs.tag }}
-      release_version: ${{ steps.version.outputs.version }}
-      release_build: ${{ steps.version.outputs.build }}
-    needs: NB-Build-and-Release
-    runs-on: windows-latest
+  deploy-pages:
+    name: Deploy update feed to GitHub Pages
+    needs: build-release
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v7
-
-      - name: Download all artifacts
+      - name: Download generated update site
         uses: actions/download-artifact@v8
         with:
-          path: artifacts
+          name: github-pages-update
+          path: update-site
 
-      - name: Extract version info
-        id: version
-        shell: pwsh
-        run: |
-          $assemblyInfoPath = "${{ github.workspace }}\mRemoteNG\Properties\AssemblyInfo.cs"
-          $line = Get-Content $assemblyInfoPath | Where-Object { $_ -match 'AssemblyVersion\("(.+?)"\)' }
-          if ($line -match 'AssemblyVersion\("(?<ver>\d+\.\d+\.\d+)\.(?<build>\d+)"\)') {
-            $version = $matches['ver']
-            $build = $matches['build']
-          } else {
-            throw "Could not extract version and build number"
-          }
-          $date = Get-Date -Format "yyyyMMdd"
-          $tag = "$date-v$version-NB-($build)"
-          $message = git log -1 --pretty=%B
-          echo "version=$version" >> $env:GITHUB_OUTPUT
-          echo "build=$build" >> $env:GITHUB_OUTPUT
-          echo "tag=$tag" >> $env:GITHUB_OUTPUT
-          echo "message=$message" >> $env:GITHUB_OUTPUT
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v6
 
-      - name: Extract Changelog
-        id: changelog
-        shell: pwsh
-        run: |
-          $changelogPath = "$env:GITHUB_WORKSPACE\CHANGELOG.md"
-          $lines = Get-Content $changelogPath
-      
-          $startIndex = -1
-          for ($i = 0; $i -lt $lines.Count; $i++) {
-            if ($lines[$i] -match '^## \[') {
-              $startIndex = $i
-              break
-            }
-          }
-      
-          if ($startIndex -eq -1) {
-            throw "No version header found in CHANGELOG.md"
-          }
-      
-          $section = @()
-          for ($i = $startIndex + 1; $i -lt $lines.Count; $i++) {
-            if ($lines[$i] -match '^## ') {
-              break
-            }
-            $section += $lines[$i]
-          }
-      
-          $joined = $section -join "`n"
-          echo "log<<EOF" >> $env:GITHUB_OUTPUT
-          echo $joined >> $env:GITHUB_OUTPUT
-          echo "EOF" >> $env:GITHUB_OUTPUT
-
-      - name: Collect all release files
-        shell: pwsh
-        run: |
-          Get-ChildItem -Path artifacts -Recurse -Filter "*.zip" | ForEach-Object {
-            Copy-Item $_.FullName -Destination .
-            echo "Found: $($_.Name)"
-          }
-
-      - name: Create combined release
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v5.0.0
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: "mRemoteNG ${{ steps.version.outputs.version }} NB ${{ steps.version.outputs.build }}"
-          files: '*.zip'
-          body: |
-            ## mRemoteNG ${{ steps.version.outputs.version }} NB Build ${{ steps.version.outputs.build }}
-            
-            ### 📦 Available Downloads
-            
-            **Framework-Dependent (FD)** - Requires .NET 10 Runtime installed:
-            - Smaller download size (~15-25 MB)
-            - Requires .NET 10 Desktop Runtime on user machine
-            - Files: `*-FD.zip`
-            
-            **Self-Contained (SC)** - Portable, no installation required:
-            - Larger download size (~80-150 MB)
-            - Includes .NET 10 runtime - no installation needed
-            - Files: `*-SC.zip`
-            
-            Both versions are available for **x64** and **ARM64** architectures.
-            
-            ---
-            
-            ### 📝 Changes in this Release
-            ${{ steps.changelog.outputs.log }}
-            
-            ### 💬 Last Commit Message
-            ${{ steps.version.outputs.message }}
+          path: update-site
 
-          draft: false
-          prerelease: true
-
-      - name: (12) Generate update manifest for GitHub Pages
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish_pages_update == 'true'
-        shell: pwsh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          $outputPath = "$env:GITHUB_WORKSPACE\gh-pages-update"
-          if (Test-Path $outputPath) { Remove-Item -Recurse -Force $outputPath }
-
-          . "$env:GITHUB_WORKSPACE\Tools\Publish-GitHubPagesUpdateManifest.ps1" `
-              -RepositoryOwner "${{ github.repository_owner }}" `
-              -RepositoryName "${{ github.event.repository.name }}" `
-              -TagName "${{ steps.version.outputs.tag }}" `
-              -Version "${{ steps.version.outputs.version }}" `
-              -Build "${{ steps.version.outputs.build }}" `
-              -OutputDir $outputPath `
-              -Channel "${{ github.event.inputs.release_channel }}" `
-              -Publish "False"
-
-          if (Test-Path "$outputPath\update.txt") { Write-Host "update.txt generated" }
-          if (Test-Path "$outputPath\preview-update.txt") { Write-Host "preview-update.txt generated" }
-          if (Test-Path "$outputPath\nightly-update.txt") { Write-Host "nightly-update.txt generated" }
-          if (Test-Path "$outputPath\update-portable.txt") { Write-Host "update-portable.txt generated" }
-          if (Test-Path "$outputPath\preview-update-portable.txt") { Write-Host "preview-update-portable.txt generated" }
-          if (Test-Path "$outputPath\nightly-update-portable.txt") { Write-Host "nightly-update-portable.txt generated" }
-
-      - name: (13) Publish update manifest to GitHub Pages
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish_pages_update == 'true'
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: gh-pages-update
-          publish_branch: gh-pages
-          keep_files: true
-          force_orphan: false
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

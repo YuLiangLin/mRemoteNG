@@ -1,5 +1,6 @@
 ﻿using mRemoteNG.Tools;
 using System;
+using mRemoteNG.App.Update;
 using System.Diagnostics;
 using System.Windows.Forms;
 using mRemoteNG.Config.Connections;
@@ -19,7 +20,7 @@ namespace mRemoteNG.App
     {
         private static string? _updateFilePath;
 
-        private static bool UpdatePending
+        internal static bool UpdatePending
         {
             get { return !string.IsNullOrEmpty(_updateFilePath); }
         }
@@ -122,9 +123,16 @@ namespace mRemoteNG.App
         {
             if (UpdatePending && !string.IsNullOrEmpty(_updateFilePath))
             {
-                // Validate the update file path to prevent command injection
-                Tools.PathValidator.ValidateExecutablePathOrThrow(_updateFilePath, nameof(_updateFilePath));
-                Process.Start(new ProcessStartInfo(_updateFilePath) { UseShellExecute = true });
+                if (Runtime.IsPortableEdition)
+                {
+                    PortableUpdateInstaller.Start(_updateFilePath);
+                }
+                else
+                {
+                    // Validate the update file path to prevent command injection
+                    Tools.PathValidator.ValidateExecutablePathOrThrow(_updateFilePath, nameof(_updateFilePath));
+                    Process.Start(new ProcessStartInfo(_updateFilePath) { UseShellExecute = true });
+                }
             }
         }
     }
