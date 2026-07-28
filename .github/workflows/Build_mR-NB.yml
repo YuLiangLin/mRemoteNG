@@ -10,6 +10,14 @@ on:
         description: 'Run NB release'
         required: false
         default: 'true'
+      release_channel:
+        description: 'Update channel for website feed (Stable / Preview / Nightly)'
+        required: false
+        default: 'Stable'
+      publish_pages_update:
+        description: 'Write update.txt to gh-pages'
+        required: false
+        default: 'true'
 
 permissions:
   contents: write
@@ -196,6 +204,10 @@ jobs:
           retention-days: 1
 
   Create-Combined-Release:
+    outputs:
+      release_tag: ${{ steps.version.outputs.tag }}
+      release_version: ${{ steps.version.outputs.version }}
+      release_build: ${{ steps.version.outputs.build }}
     needs: NB-Build-and-Release
     runs-on: windows-latest
     steps:
@@ -302,3 +314,39 @@ jobs:
 
           draft: false
           prerelease: true
+
+      - name: (12) Generate update manifest for GitHub Pages
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish_pages_update == 'true'
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $outputPath = "$env:GITHUB_WORKSPACE\gh-pages-update"
+          if (Test-Path $outputPath) { Remove-Item -Recurse -Force $outputPath }
+
+          . "$env:GITHUB_WORKSPACE\Tools\Publish-GitHubPagesUpdateManifest.ps1" `
+              -RepositoryOwner "${{ github.repository_owner }}" `
+              -RepositoryName "${{ github.event.repository.name }}" `
+              -TagName "${{ steps.version.outputs.tag }}" `
+              -Version "${{ steps.version.outputs.version }}" `
+              -Build "${{ steps.version.outputs.build }}" `
+              -OutputDir $outputPath `
+              -Channel "${{ github.event.inputs.release_channel }}" `
+              -Publish "False"
+
+          if (Test-Path "$outputPath\update.txt") { Write-Host "update.txt generated" }
+          if (Test-Path "$outputPath\preview-update.txt") { Write-Host "preview-update.txt generated" }
+          if (Test-Path "$outputPath\nightly-update.txt") { Write-Host "nightly-update.txt generated" }
+          if (Test-Path "$outputPath\update-portable.txt") { Write-Host "update-portable.txt generated" }
+          if (Test-Path "$outputPath\preview-update-portable.txt") { Write-Host "preview-update-portable.txt generated" }
+          if (Test-Path "$outputPath\nightly-update-portable.txt") { Write-Host "nightly-update-portable.txt generated" }
+
+      - name: (13) Publish update manifest to GitHub Pages
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish_pages_update == 'true'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: gh-pages-update
+          publish_branch: gh-pages
+          keep_files: true
+          force_orphan: false
