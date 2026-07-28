@@ -419,7 +419,7 @@
     <value>如果驗證失敗則不連線</value>
   </data>
   <data name="DoubleClickTabTogglesFullscreen" xml:space="preserve">
-    <value>按兩下 RDP 頁籤切換全螢幕</value>
+    <value>按兩下連線頁籤切換全螢幕</value>
   </data>
   <data name="DownloadAndInstall" xml:space="preserve">
     <value>下載並安裝</value>
@@ -663,6 +663,9 @@
   </data>
   <data name="Exit" xml:space="preserve">
     <value>結束</value>
+  </data>
+  <data name="ExitFullscreen" xml:space="preserve">
+    <value>離開全螢幕</value>
   </data>
   <data name="ExternalToolsToolbar" xml:space="preserve">
     <value>外部工具工具列</value>

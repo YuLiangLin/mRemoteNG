@@ -440,7 +440,7 @@
     <value>身份验证失败时取消连接</value>
   </data>
   <data name="DoubleClickTabTogglesFullscreen" xml:space="preserve">
-    <value>双击 RDP 标签切换全屏</value>
+    <value>双击连接标签切换全屏</value>
   </data>
   <data name="DownloadAndInstall" xml:space="preserve">
     <value>下载并安装</value>
@@ -748,6 +748,9 @@
   </data>
   <data name="Exit" xml:space="preserve">
     <value>退出</value>
+  </data>
+  <data name="ExitFullscreen" xml:space="preserve">
+    <value>退出全屏</value>
   </data>
   <data name="ExternalToolsToolbar" xml:space="preserve">
     <value>外部工具工具栏</value>

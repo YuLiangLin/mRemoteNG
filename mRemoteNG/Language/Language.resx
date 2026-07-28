@@ -467,7 +467,7 @@ Starting with new connections file.</value>
     <value>Don't connect if authentication fails</value>
   </data>
   <data name="DoubleClickTabTogglesFullscreen" xml:space="preserve">
-    <value>Double click on an RDP tab toggles fullscreen</value>
+    <value>Double click on a connection tab toggles fullscreen</value>
   </data>
   <data name="DownloadAndInstall" xml:space="preserve">
     <value>Download and Install</value>
@@ -775,6 +775,9 @@ See the Microsoft Support article at http://support.microsoft.com/kb/811833 for 
   </data>
   <data name="Exit" xml:space="preserve">
     <value>Exit</value>
+  </data>
+  <data name="ExitFullscreen" xml:space="preserve">
+    <value>Exit fullscreen</value>
   </data>
   <data name="ExternalToolsToolbar" xml:space="preserve">
     <value>External Tools Toolbar</value>

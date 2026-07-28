@@ -82,6 +82,12 @@ namespace mRemoteNG.App
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern bool SetForegroundWindow(IntPtr hWnd);
 
+        [DllImport("user32.dll", SetLastError = true)]
+        internal static extern bool RegisterHotKey(IntPtr hWnd, int id, uint modifiers, uint virtualKey);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        internal static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern bool SetMenuItemBitmaps(IntPtr hMenu,
                                                        int uPosition,

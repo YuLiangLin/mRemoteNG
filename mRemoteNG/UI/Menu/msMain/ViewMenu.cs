@@ -327,6 +327,14 @@ namespace mRemoteNG.UI.Menu
 
         private void mMenViewFullscreen_Click(object sender, EventArgs e)
         {
+            if (MainForm?.pnlDock?.ActiveDocument is ConnectionWindow connectionWindow &&
+                connectionWindow.CanToggleFullscreen)
+            {
+                connectionWindow.ToggleFullscreen();
+                _mMenViewFullscreen.Checked = false;
+                return;
+            }
+
             FullscreenHandler.Value = !FullscreenHandler.Value;
             _mMenViewFullscreen.Checked = FullscreenHandler.Value;
         }

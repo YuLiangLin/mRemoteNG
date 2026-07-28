@@ -10,10 +10,12 @@ namespace mRemoteNG.App.Info
     [SupportedOSPlatform("windows")]
     public static class SettingsFileInfo
     {
-        private static readonly string? ExePath = Path.GetDirectoryName(Assembly.GetAssembly(typeof(ConnectionInfo))?.Location);
+        private static readonly string? AssemblyPath = Path.GetDirectoryName(Assembly.GetAssembly(typeof(ConnectionInfo))?.Location);
+        private static readonly string ExecutablePath = ResolveExecutableDirectory(Environment.ProcessPath, AppContext.BaseDirectory);
 
-        // ExePath resolves the running assembly's own directory and is always available at runtime.
-        public static string SettingsPath => Runtime.IsPortableEdition ? ExePath! : Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Application.ProductName;
+        // Single-file deployments extract assemblies under %TEMP%\.net, while
+        // Environment.ProcessPath continues to identify the portable executable.
+        public static string SettingsPath => Runtime.IsPortableEdition ? ExecutablePath : Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Application.ProductName;
 
         public static string LayoutFileName { get; } = "pnlLayout.xml";
         public static string ExtAppsFilesName { get; } = "extApps.xml";
@@ -24,6 +26,17 @@ namespace mRemoteNG.App.Info
             SettingsPath != null ? Path.Combine(SettingsPath, "Themes") : String.Empty;
 
         public static string InstalledThemeFolder { get; } =
-            ExePath != null ? Path.Combine(ExePath, "Themes") : String.Empty;
+            AssemblyPath != null ? Path.Combine(AssemblyPath, "Themes") : String.Empty;
+
+        internal static string ResolveExecutableDirectory(string? processPath, string baseDirectory)
+        {
+            string? processDirectory = string.IsNullOrWhiteSpace(processPath)
+                ? null
+                : Path.GetDirectoryName(processPath);
+
+            return string.IsNullOrWhiteSpace(processDirectory)
+                ? Path.TrimEndingDirectorySeparator(Path.GetFullPath(baseDirectory))
+                : processDirectory;
+        }
     }
 }

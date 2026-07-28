@@ -1997,7 +1997,7 @@ namespace mRemoteNG.Resources.Language {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Double click on an RDP tab toggles fullscreen.
+        ///   Looks up a localized string similar to Double click on a connection tab toggles fullscreen.
         /// </summary>
         internal static string DoubleClickTabTogglesFullscreen {
             get {
@@ -2474,6 +2474,15 @@ namespace mRemoteNG.Resources.Language {
         internal static string Exit {
             get {
                 return ResourceManager.GetString("Exit", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Exit fullscreen.
+        /// </summary>
+        internal static string ExitFullscreen {
+            get {
+                return ResourceManager.GetString("ExitFullscreen", resourceCulture);
             }
         }
         

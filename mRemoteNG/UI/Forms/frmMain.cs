@@ -122,7 +122,7 @@ namespace mRemoteNG.UI.Forms
             this.Left = viewport.Left + (targetScreen.Bounds.Size.Width / 2) - (this.Width / 2);
             this.Top = viewport.Top + (targetScreen.Bounds.Size.Height / 2) - (this.Height / 2);
 
-            Fullscreen = new FullscreenHandler(this);
+            Fullscreen = new FullscreenHandler(this, tsContainer, pnlDock);
 
             //Theming support
             _themeManager = ThemeManager.getInstance();

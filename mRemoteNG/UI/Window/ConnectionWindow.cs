@@ -632,15 +632,14 @@ namespace mRemoteNG.UI.Window
             }
         }
 
-        internal bool CanToggleFullscreen => GetInterfaceControl()?.Protocol is RdpProtocol;
+        internal bool CanToggleFullscreen => RemoteSessionFullscreen.CanToggle(GetInterfaceControl());
 
         internal void ToggleFullscreen()
         {
             try
             {
                 InterfaceControl interfaceControl = GetInterfaceControl();
-                RdpProtocol rdp = interfaceControl?.Protocol as RdpProtocol;
-                rdp?.ToggleFullscreen();
+                RemoteSessionFullscreen.Toggle(interfaceControl);
             }
             catch (Exception ex)
             {

@@ -8,7 +8,6 @@ using mRemoteNG.Connection;
 using mRemoteNG.Properties;
 using WeifenLuo.WinFormsUI.Docking;
 using mRemoteNG.Resources.Language;
-using mRemoteNG.Connection.Protocol.RDP;
 using System.Runtime.Versioning;
 
 namespace mRemoteNG.UI.Tabs
@@ -1405,14 +1404,13 @@ namespace mRemoteNG.UI.Tabs
             interfaceControl?.Protocol.Close();
         }
 
-        private void ToggleRdpFullscreen(int tabIndex)
+        private void ToggleConnectionFullscreen(int tabIndex)
         {
             if (tabIndex < 0 || Tabs[tabIndex].Content is not ConnectionTab connectionTab)
                 return;
 
             InterfaceControl interfaceControl = InterfaceControl.FindInterfaceControl(connectionTab);
-            if (interfaceControl?.Protocol is RdpProtocol rdp)
-                rdp.ToggleFullscreen();
+            RemoteSessionFullscreen.Toggle(interfaceControl);
         }
 
         #region Native Methods
@@ -1424,8 +1422,9 @@ namespace mRemoteNG.UI.Tabs
                 // If the option is not set, do nothing. Do not send the message to base.
                 if (!Properties.OptionsTabsPanelsPage.Default.DoubleClickOnTabTogglesFullscreen) return;
 
-                // Toggle only the RDP tab that was actually double-clicked.
-                ToggleRdpFullscreen(HitTest());
+                // RDP uses its native fullscreen mode. Other connection types move
+                // the live session control into a borderless fullscreen host.
+                ToggleConnectionFullscreen(HitTest());
 
                 return;
             }

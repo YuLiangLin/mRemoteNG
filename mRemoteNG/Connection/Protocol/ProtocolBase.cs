@@ -104,6 +104,14 @@ namespace mRemoteNG.Connection.Protocol
         {
         }
 
+        internal void RefreshRemoteSessionSize()
+        {
+            if (_interfaceControl == null || _interfaceControl.IsDisposed)
+                return;
+
+            Resize(_interfaceControl, EventArgs.Empty);
+        }
+
         public virtual bool Initialize()
         {
             try
