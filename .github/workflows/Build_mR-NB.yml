@@ -1,11 +1,14 @@
 name: Release mRemoteNG Fork
 
-run-name: Release ${{ github.event.inputs.release_tag || github.ref_name }}
+run-name: Release ${{ github.event.release.tag_name || github.event.inputs.release_tag || github.ref_name }}
 
 on:
   push:
     tags:
       - "v*.*.*-yll.*"
+  release:
+    types:
+      - published
   workflow_dispatch:
     inputs:
       release_tag:
@@ -17,11 +20,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: mremoteng-release-${{ github.event.inputs.release_tag || github.ref_name }}
+  group: mremoteng-release-${{ github.event.release.tag_name || github.event.inputs.release_tag || github.ref_name }}
   cancel-in-progress: false
 
 env:
-  RELEASE_TAG: ${{ github.event.inputs.release_tag || github.ref_name }}
+  RELEASE_TAG: ${{ github.event.release.tag_name || github.event.inputs.release_tag || github.ref_name }}
 
 jobs:
   build-release:
