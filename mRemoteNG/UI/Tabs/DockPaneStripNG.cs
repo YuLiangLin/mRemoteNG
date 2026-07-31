@@ -6,6 +6,7 @@ using System.Security.Permissions;
 using System.Windows.Forms;
 using mRemoteNG.Connection;
 using mRemoteNG.Properties;
+using mRemoteNG.Themes;
 using WeifenLuo.WinFormsUI.Docking;
 using mRemoteNG.Resources.Language;
 using System.Runtime.Versioning;
@@ -721,10 +722,12 @@ namespace mRemoteNG.UI.Tabs
         {
             // IMPORTANT: fill background.
             Rectangle rectTabStrip = TabStripRectangle;
+            Color stripBackground = RuntimeThemeColorResolver.Resolve(
+                "Tab_Background",
+                DockPane.DockPanel.Theme.ColorPalette.MainWindowActive.Background);
             g.FillRectangle(
-                            DockPane.DockPanel.Theme.PaintingService.GetBrush(DockPane.DockPanel.Theme.ColorPalette
-                                                                                      .MainWindowActive
-                                                                                      .Background), rectTabStrip);
+                            DockPane.DockPanel.Theme.PaintingService.GetBrush(stripBackground),
+                            rectTabStrip);
 
             if (Appearance == DockPane.AppearanceStyle.Document)
                 DrawTabStrip_Document(g);
@@ -768,9 +771,13 @@ namespace mRemoteNG.UI.Tabs
             {
                 Color tabUnderLineColor;
                 if (tabActive != null && DockPane.IsActiveDocumentPane)
-                    tabUnderLineColor = DockPane.DockPanel.Theme.ColorPalette.TabSelectedActive.Background;
+                    tabUnderLineColor = RuntimeThemeColorResolver.Resolve(
+                        "Treeview_SelectedItem_Active_Background",
+                        DockPane.DockPanel.Theme.ColorPalette.TabSelectedActive.Background);
                 else
-                    tabUnderLineColor = DockPane.DockPanel.Theme.ColorPalette.TabSelectedInactive.Background;
+                    tabUnderLineColor = RuntimeThemeColorResolver.Resolve(
+                        "Treeview_SelectedItem_Inactive_Background",
+                        DockPane.DockPanel.Theme.ColorPalette.TabSelectedInactive.Background);
 
                 g.DrawLine(DockPane.DockPanel.Theme.PaintingService.GetPen(tabUnderLineColor, 4), rectTabStrip.Left,
                            rectTabStrip.Bottom, rectTabStrip.Right, rectTabStrip.Bottom);
@@ -788,7 +795,9 @@ namespace mRemoteNG.UI.Tabs
         private void DrawTabStrip_ToolWindow(Graphics g)
         {
             Rectangle rect = TabStripRectangle_ToolWindow;
-            Color borderColor = DockPane.DockPanel.Theme.ColorPalette.ToolWindowBorder;
+            Color borderColor = RuntimeThemeColorResolver.Resolve(
+                "List_Item_Border",
+                DockPane.DockPanel.Theme.ColorPalette.ToolWindowBorder);
 
             g.DrawLine(DockPane.DockPanel.Theme.PaintingService.GetPen(borderColor), rect.Left, rect.Top,
                        rect.Right, rect.Top);
@@ -900,22 +909,34 @@ namespace mRemoteNG.UI.Tabs
             Rectangle rectTab = DrawHelper.RtlTransform(this, rect);
             rectText = DrawHelper.RtlTransform(this, rectText);
             rectIcon = DrawHelper.RtlTransform(this, rectIcon);
-            Color borderColor = DockPane.DockPanel.Theme.ColorPalette.ToolWindowBorder;
+            Color borderColor = RuntimeThemeColorResolver.Resolve(
+                "List_Item_Border",
+                DockPane.DockPanel.Theme.ColorPalette.ToolWindowBorder);
 
-            Color separatorColor = DockPane.DockPanel.Theme.ColorPalette.ToolWindowSeparator;
+            Color separatorColor = RuntimeThemeColorResolver.Resolve(
+                "List_Item_Border",
+                DockPane.DockPanel.Theme.ColorPalette.ToolWindowSeparator);
             if (DockPane.ActiveContent == tab.Content)
             {
                 Color textColor;
                 Color backgroundColor;
                 if (DockPane.IsActiveDocumentPane)
                 {
-                    textColor = DockPane.DockPanel.Theme.ColorPalette.ToolWindowTabSelectedActive.Text;
-                    backgroundColor = DockPane.DockPanel.Theme.ColorPalette.ToolWindowTabSelectedActive.Background;
+                    textColor = RuntimeThemeColorResolver.Resolve(
+                        "Treeview_SelectedItem_Active_Foreground",
+                        DockPane.DockPanel.Theme.ColorPalette.ToolWindowTabSelectedActive.Text);
+                    backgroundColor = RuntimeThemeColorResolver.Resolve(
+                        "Treeview_SelectedItem_Active_Background",
+                        DockPane.DockPanel.Theme.ColorPalette.ToolWindowTabSelectedActive.Background);
                 }
                 else
                 {
-                    textColor = DockPane.DockPanel.Theme.ColorPalette.ToolWindowTabSelectedInactive.Text;
-                    backgroundColor = DockPane.DockPanel.Theme.ColorPalette.ToolWindowTabSelectedInactive.Background;
+                    textColor = RuntimeThemeColorResolver.Resolve(
+                        "Treeview_SelectedItem_Inactive_Foreground",
+                        DockPane.DockPanel.Theme.ColorPalette.ToolWindowTabSelectedInactive.Text);
+                    backgroundColor = RuntimeThemeColorResolver.Resolve(
+                        "Treeview_SelectedItem_Inactive_Background",
+                        DockPane.DockPanel.Theme.ColorPalette.ToolWindowTabSelectedInactive.Background);
                 }
 
                 g.FillRectangle(DockPane.DockPanel.Theme.PaintingService.GetBrush(backgroundColor), rect);
@@ -934,13 +955,21 @@ namespace mRemoteNG.UI.Tabs
                 Color backgroundColor;
                 if (tab.Content == DockPane.MouseOverTab)
                 {
-                    textColor = DockPane.DockPanel.Theme.ColorPalette.ToolWindowTabUnselectedHovered.Text;
-                    backgroundColor = DockPane.DockPanel.Theme.ColorPalette.ToolWindowTabUnselectedHovered.Background;
+                    textColor = RuntimeThemeColorResolver.Resolve(
+                        "List_Item_Selected_Foreground",
+                        DockPane.DockPanel.Theme.ColorPalette.ToolWindowTabUnselectedHovered.Text);
+                    backgroundColor = RuntimeThemeColorResolver.Resolve(
+                        "List_Item_Selected_Background",
+                        DockPane.DockPanel.Theme.ColorPalette.ToolWindowTabUnselectedHovered.Background);
                 }
                 else
                 {
-                    textColor = DockPane.DockPanel.Theme.ColorPalette.ToolWindowTabUnselected.Text;
-                    backgroundColor = DockPane.DockPanel.Theme.ColorPalette.MainWindowActive.Background;
+                    textColor = RuntimeThemeColorResolver.Resolve(
+                        "Tab_Item_Foreground",
+                        DockPane.DockPanel.Theme.ColorPalette.ToolWindowTabUnselected.Text);
+                    backgroundColor = RuntimeThemeColorResolver.Resolve(
+                        "Tab_Background",
+                        DockPane.DockPanel.Theme.ColorPalette.MainWindowActive.Background);
                 }
 
                 g.FillRectangle(DockPane.DockPanel.Theme.PaintingService.GetBrush(backgroundColor), rect);
@@ -994,15 +1023,31 @@ namespace mRemoteNG.UI.Tabs
             // Get custom tab color if available
             Color? customTabColor = GetCustomTabColor(tab.Content);
 
-            Color activeColor = customTabColor ?? DockPane.DockPanel.Theme.ColorPalette.TabSelectedActive.Background;
-            Color lostFocusColor = customTabColor ?? DockPane.DockPanel.Theme.ColorPalette.TabSelectedInactive.Background;
-            Color inactiveColor = DockPane.DockPanel.Theme.ColorPalette.MainWindowActive.Background;
-            Color mouseHoverColor = DockPane.DockPanel.Theme.ColorPalette.TabUnselectedHovered.Background;
+            Color activeColor = customTabColor ?? RuntimeThemeColorResolver.Resolve(
+                "Treeview_SelectedItem_Active_Background",
+                DockPane.DockPanel.Theme.ColorPalette.TabSelectedActive.Background);
+            Color lostFocusColor = customTabColor ?? RuntimeThemeColorResolver.Resolve(
+                "Treeview_SelectedItem_Inactive_Background",
+                DockPane.DockPanel.Theme.ColorPalette.TabSelectedInactive.Background);
+            Color inactiveColor = RuntimeThemeColorResolver.Resolve(
+                "Tab_Background",
+                DockPane.DockPanel.Theme.ColorPalette.MainWindowActive.Background);
+            Color mouseHoverColor = RuntimeThemeColorResolver.Resolve(
+                "List_Item_Selected_Background",
+                DockPane.DockPanel.Theme.ColorPalette.TabUnselectedHovered.Background);
 
-            Color activeText = DockPane.DockPanel.Theme.ColorPalette.TabSelectedActive.Text;
-            Color lostFocusText = DockPane.DockPanel.Theme.ColorPalette.TabSelectedInactive.Text;
-            Color inactiveText = DockPane.DockPanel.Theme.ColorPalette.TabUnselected.Text;
-            Color mouseHoverText = DockPane.DockPanel.Theme.ColorPalette.TabUnselectedHovered.Text;
+            Color activeText = RuntimeThemeColorResolver.Resolve(
+                "Treeview_SelectedItem_Active_Foreground",
+                DockPane.DockPanel.Theme.ColorPalette.TabSelectedActive.Text);
+            Color lostFocusText = RuntimeThemeColorResolver.Resolve(
+                "Treeview_SelectedItem_Inactive_Foreground",
+                DockPane.DockPanel.Theme.ColorPalette.TabSelectedInactive.Text);
+            Color inactiveText = RuntimeThemeColorResolver.Resolve(
+                "Tab_Item_Foreground",
+                DockPane.DockPanel.Theme.ColorPalette.TabUnselected.Text);
+            Color mouseHoverText = RuntimeThemeColorResolver.Resolve(
+                "List_Item_Selected_Foreground",
+                DockPane.DockPanel.Theme.ColorPalette.TabUnselectedHovered.Text);
 
             Color text;
             Image image = null;

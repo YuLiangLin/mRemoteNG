@@ -49,7 +49,6 @@ namespace mRemoteNG.Config.Settings
 
                 SetSupportedCulture();
                 SetApplicationWindowPositionAndSize();
-                SetKioskMode();
 
                 SetPuttyPath();
                 SetShowSystemTrayIcon();
@@ -121,12 +120,6 @@ namespace mRemoteNG.Config.Settings
             if (Properties.OptionsConnectionsPage.Default.AutoSaveEveryMinutes <= 0) return;
             MainForm.tmrAutoSave.Interval = Properties.OptionsConnectionsPage.Default.AutoSaveEveryMinutes * 60000;
             MainForm.tmrAutoSave.Enabled = true;
-        }
-
-        private void SetKioskMode()
-        {
-            if (!Properties.App.Default.MainFormKiosk) return;
-            MainForm.Fullscreen.Value = true;
         }
 
         private static void SetShowSystemTrayIcon()

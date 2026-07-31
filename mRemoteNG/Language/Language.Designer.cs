@@ -4151,6 +4151,15 @@ namespace mRemoteNG.Resources.Language {
                 return ResourceManager.GetString("OptionsThemeChangeWarning", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Theme changes are previewed immediately. Open connection tabs may finish restyling after restart..
+        /// </summary>
+        internal static string OptionsThemeLivePreviewHint {
+            get {
+                return ResourceManager.GetString("OptionsThemeLivePreviewHint", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Do you really want to delete the theme?.

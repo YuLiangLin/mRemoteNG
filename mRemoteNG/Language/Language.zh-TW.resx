@@ -163,7 +163,7 @@
     <value>自動儲存間隔:</value>
   </data>
   <data name="AvailableVersion" xml:space="preserve">
-    <value>目前版本</value>
+    <value>最新版本</value>
   </data>
   <data name="_Browse" xml:space="preserve">
     <value>瀏覽(&amp;B)...</value>
@@ -1537,7 +1537,7 @@ mRemoteNG 將立即結束並開始安裝。</value>
     <value>使用 SQL Server 載入 &amp;&amp; 儲存連線</value>
   </data>
   <data name="Version" xml:space="preserve">
-    <value>版本</value>
+    <value>已安裝版本</value>
   </data>
   <data name="Vnc" xml:space="preserve">
     <value>VNC</value>
@@ -1614,5 +1614,8 @@ mRemoteNG 將立即結束並開始安裝。</value>
   </data>
   <data name="VaultOpenbaoSecretEngineSSHOTP" xml:space="preserve">
     <value></value>
+  </data>
+  <data name="OptionsThemeLivePreviewHint" xml:space="preserve">
+    <value>選擇主題後會立即預覽；已開啟的連線頁籤可能需要重新啟動後才會完整換色。</value>
   </data>
 </root>

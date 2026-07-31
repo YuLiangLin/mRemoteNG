@@ -165,7 +165,11 @@ namespace mRemoteNG.Themes
         //Custom extenders for mremote customizations in DPS
         private void setCustomExtenders()
         {
+            _theme.Extender.DockPaneCaptionFactory = new MremoteDockPaneCaptionFactory();
             _theme.Extender.DockPaneStripFactory = new MremoteDockPaneStripFactory();
+            _theme.Extender.AutoHideStripFactory = new MremoteAutoHideStripFactory();
+            _theme.Extender.DockPaneSplitterControlFactory = new MremoteDockPaneSplitterFactory();
+            _theme.Extender.WindowSplitterControlFactory = new MremoteWindowSplitterFactory();
             _theme.Extender.FloatWindowFactory = new MremoteFloatWindowFactory();
         }
     }

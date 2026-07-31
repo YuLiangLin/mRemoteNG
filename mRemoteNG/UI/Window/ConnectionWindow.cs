@@ -205,14 +205,14 @@ namespace mRemoteNG.UI.Window
         {
             if (!ThemeManager.getInstance().ThemingActive)
             {
-                connDock.Theme = ThemeManager.getInstance().DefaultTheme.Theme;
+                DockPanelThemeSwitcher.Apply(connDock, ThemeManager.getInstance().DefaultTheme.Theme);
                 return;
             }
 
             base.ApplyTheme();
             try
             {
-                connDock.Theme = ThemeManager.getInstance().ActiveTheme.Theme;
+                DockPanelThemeSwitcher.Apply(connDock, ThemeManager.getInstance().ActiveTheme.Theme);
             }
             catch (Exception ex)
             {

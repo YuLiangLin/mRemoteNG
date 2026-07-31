@@ -175,7 +175,7 @@ namespace mRemoteNG.UI.Menu
             _mMenViewFullscreen.ShortcutKeys = Keys.F11;
             _mMenViewFullscreen.Size = new System.Drawing.Size(228, 22);
             _mMenViewFullscreen.Text = Language.Fullscreen;
-            _mMenViewFullscreen.Checked = Properties.App.Default.MainFormKiosk;
+            _mMenViewFullscreen.Checked = false;
             _mMenViewFullscreen.Click += mMenViewFullscreen_Click;
         }
 
@@ -204,6 +204,7 @@ namespace mRemoteNG.UI.Menu
             _mMenViewExtAppsToolbar.Checked = TsExternalTools.Visible;
             _mMenViewQuickConnectToolbar.Checked = TsQuickConnect.Visible;
             _mMenViewMultiSshToolbar.Checked = TsMultiSsh.Visible;
+            _mMenViewFullscreen.Checked = FullscreenHandler?.Value == true;
 
             _mMenViewConnectionPanels.DropDownItems.Clear();
 
@@ -327,14 +328,6 @@ namespace mRemoteNG.UI.Menu
 
         private void mMenViewFullscreen_Click(object sender, EventArgs e)
         {
-            if (MainForm?.pnlDock?.ActiveDocument is ConnectionWindow connectionWindow &&
-                connectionWindow.CanToggleFullscreen)
-            {
-                connectionWindow.ToggleFullscreen();
-                _mMenViewFullscreen.Checked = false;
-                return;
-            }
-
             FullscreenHandler.Value = !FullscreenHandler.Value;
             _mMenViewFullscreen.Checked = FullscreenHandler.Value;
         }

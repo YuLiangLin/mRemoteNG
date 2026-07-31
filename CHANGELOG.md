@@ -3,6 +3,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.78.3-yll.3] - 2026-07-31
+### Added
+- Added six modern built-in themes with immediate preview; Apply or OK saves the selection, while Cancel restores the previous theme.
+
+### Fixed
+- Kept F11 as a reliable application-fullscreen toggle so it can always return to the main window, while connection fullscreen remains available from tab double-click and Ctrl+Alt+Enter.
+- Stopped restoring a transient fullscreen session on the next launch; automatic fullscreen now follows only the explicit startup option.
+- Clarified the Traditional Chinese update screen labels as installed and latest versions.
+- Replaced hard-coded Japanese theme palette labels with Traditional Chinese labels and an English fallback that follows the active UI language.
+- Completed live theme refresh across menus, option pages, DockPanel tabs, captions, auto-hide strips, splitters, list headers, and native scrollbars without closing active remote sessions.
+- Replaced boxed dock caption buttons with theme-aware vector glyphs and corrected their right-edge layout.
+
 ## [1.78.3-yll.2] - 2026-07-28
 ### Added
 - Added true fullscreen for every connection tab: RDP keeps its native fullscreen mode, while SSH, VNC, and other embedded sessions use a dedicated fullscreen host.

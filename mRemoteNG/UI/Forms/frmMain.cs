@@ -369,19 +369,18 @@ namespace mRemoteNG.UI.Forms
 
             if (!_themeManager.ThemingActive)
             {
-                pnlDock.Theme = _themeManager.DefaultTheme.Theme;
+                DockPanelThemeSwitcher.Apply(pnlDock, _themeManager.DefaultTheme.Theme);
                 return;
             }
 
             try
             {
-                // this will always throw when turning themes on from
-                // the options menu.
-                pnlDock.Theme = _themeManager.ActiveTheme.Theme;
+                DockPanelThemeSwitcher.Apply(pnlDock, _themeManager.ActiveTheme.Theme);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // intentionally ignore exception
+                Runtime.MessageCollector.AddExceptionStackTrace("Error applying DockPanel theme", ex,
+                                                                MessageClass.WarningMsg);
             }
 
             // Persist settings when rebuilding UI
@@ -393,9 +392,29 @@ namespace mRemoteNG.UI.Forms
                 vsToolStripExtender.SetStyle(_multiSshToolStrip, _themeManager.ActiveTheme.Version, _themeManager.ActiveTheme.Theme);
 
                 if (!_themeManager.ActiveAndExtended) return;
-                tsContainer.TopToolStripPanel.BackColor = _themeManager.ActiveTheme.ExtendedPalette.getColor("CommandBarMenuDefault_Background");
-                BackColor = _themeManager.ActiveTheme.ExtendedPalette.getColor("Dialog_Background");
-                ForeColor = _themeManager.ActiveTheme.ExtendedPalette.getColor("Dialog_Foreground");
+                Color commandBarBackground =
+                    _themeManager.ActiveTheme.ExtendedPalette.getColor("CommandBarMenuDefault_Background");
+                Color dialogBackground =
+                    _themeManager.ActiveTheme.ExtendedPalette.getColor("Dialog_Background");
+                Color dialogForeground =
+                    _themeManager.ActiveTheme.ExtendedPalette.getColor("Dialog_Foreground");
+
+                RuntimeThemeToolStripStyler.Apply(msMain, _themeManager.ActiveTheme.ExtendedPalette);
+                RuntimeThemeToolStripStyler.Apply(_quickConnectToolStrip,
+                                                   _themeManager.ActiveTheme.ExtendedPalette);
+                RuntimeThemeToolStripStyler.Apply(_externalToolsToolStrip,
+                                                   _themeManager.ActiveTheme.ExtendedPalette);
+                RuntimeThemeToolStripStyler.Apply(_multiSshToolStrip,
+                                                   _themeManager.ActiveTheme.ExtendedPalette);
+
+                tsContainer.BackColor = dialogBackground;
+                tsContainer.ForeColor = dialogForeground;
+                tsContainer.ContentPanel.BackColor = dialogBackground;
+                tsContainer.ContentPanel.ForeColor = dialogForeground;
+                tsContainer.TopToolStripPanel.BackColor = commandBarBackground;
+                pnlDock.DockBackColor = _themeManager.ActiveTheme.ExtendedPalette.getColor("Tab_Background");
+                BackColor = dialogBackground;
+                ForeColor = dialogForeground;
             }
             catch (Exception ex)
             {

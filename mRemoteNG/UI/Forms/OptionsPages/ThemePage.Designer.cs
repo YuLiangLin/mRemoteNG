@@ -123,6 +123,7 @@ namespace mRemoteNG.UI.Forms.OptionsPages
             // ColorNameCol
             // 
             ColorNameCol.AspectName = "Value";
+            ColorNameCol.FillsFreeSpace = true;
             ColorNameCol.Sortable = false;
             ColorNameCol.Text = "Color Name";
             ColorNameCol.Width = 265;

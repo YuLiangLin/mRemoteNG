@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using System.Collections.Generic;
+using System.Drawing;
 using WeifenLuo.WinFormsUI.Docking;
 using System.Linq;
 using System.Runtime.Versioning;
@@ -79,6 +81,44 @@ namespace mRemoteNG.Themes
 
             loadedTheme.IsExtendable = true;
             return loadedTheme;
+        }
+
+        /// <summary>
+        /// Creates an in-memory built-in theme variant from an existing theme file.
+        /// The source file is not modified; only the mapped mRemoteNG and DockPanel
+        /// palette values are replaced in the generated theme resource.
+        /// </summary>
+        internal static ThemeInfo CreateVariant(ThemeInfo baseTheme, string name,
+                                                IReadOnlyDictionary<string, Color> colorOverrides)
+        {
+            if (baseTheme == null)
+                throw new ArgumentNullException(nameof(baseTheme));
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Theme name is required", nameof(name));
+            if (string.IsNullOrWhiteSpace(baseTheme.URI) || baseTheme.URI.Contains("../") ||
+                baseTheme.URI.Contains(@"..\"))
+                throw new ArgumentException("Invalid file path", nameof(baseTheme));
+
+            ExtendedColorPalette palette = new()
+            {
+                ExtColorPalette = baseTheme.ExtendedPalette.ExtColorPalette
+                                           .ToDictionary(entry => entry.Key, entry => entry.Value),
+                DefaultColorPalette = baseTheme.ExtendedPalette.DefaultColorPalette
+            };
+
+            foreach ((string key, Color color) in colorOverrides)
+                palette.ExtColorPalette[key] = color;
+
+            byte[] sourceBytes = File.ReadAllBytes(baseTheme.URI);
+            MremoteNGPaletteManipulator manipulator = new(sourceBytes, palette);
+            byte[] variantBytes = manipulator.mergePalette(palette);
+
+            return new ThemeInfo(name, new MremoteNGThemeBase(variantBytes), baseTheme.URI,
+                                 VisualStudioToolStripExtender.VsVersion.Vs2015, palette)
+            {
+                IsThemeBase = true,
+                IsExtendable = true
+            };
         }
 
         /*

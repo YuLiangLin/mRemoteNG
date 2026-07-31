@@ -8,8 +8,8 @@ namespace mRemoteNGTests.App.Info;
 public class GeneralAppInfoTests
 {
     [TestCase("1.78.2 (Nightly Build 3630) x64", "1.78.2.3630")]
-    [TestCase("1.78.3-yll.2 x64", "1.78.3.2")]
-    [TestCase("1.78.3-yll.2+72ecec0 x64", "1.78.3.2")]
+    [TestCase("1.78.3-yll.3 x64", "1.78.3.3")]
+    [TestCase("1.78.3-yll.3+72ecec0 x64", "1.78.3.3")]
     [TestCase("1.78.3.2", "1.78.3.2")]
     public void ParseApplicationVersionRecognizesSupportedFormats(string productVersion, string expectedVersion)
     {

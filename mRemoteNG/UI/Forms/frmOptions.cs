@@ -8,6 +8,7 @@ using System.Linq;
 using System.Windows.Forms;
 using mRemoteNG.Themes;
 using System.Configuration;
+using System.Drawing;
 using mRemoteNG.Properties;
 using mRemoteNG.Resources.Language;
 using System.Runtime.Versioning;
@@ -69,6 +70,7 @@ namespace mRemoteNG.UI.Forms
             _optionPageObjectNames = optionPages;
 
             InitOptionsPagesToListView();
+            ThemeManager.getInstance().ThemeChanged += ApplyTheme;
         }
 
         // Apply the dark/light title bar before the window is shown to avoid a white flash.
@@ -129,11 +131,46 @@ namespace mRemoteNG.UI.Forms
 
         private void ApplyTheme()
         {
-            if (!ThemeManager.getInstance().ActiveAndExtended) return;
-            BackColor = ThemeManager.getInstance().ActiveTheme.ExtendedPalette.getColor("Dialog_Background");
-            ForeColor = ThemeManager.getInstance().ActiveTheme.ExtendedPalette.getColor("Dialog_Foreground");
-            pnlBottom.BackColor = ThemeManager.getInstance().ActiveTheme.ExtendedPalette.getColor("Dialog_Background");
-            pnlBottom.ForeColor = ThemeManager.getInstance().ActiveTheme.ExtendedPalette.getColor("Dialog_Foreground");
+            ThemeManager themeManager = ThemeManager.getInstance();
+            themeManager.ApplyThemeToTitleBar(this);
+            if (!themeManager.ActiveAndExtended) return;
+
+            Color background = themeManager.ActiveTheme.ExtendedPalette.getColor("Dialog_Background");
+            Color foreground = themeManager.ActiveTheme.ExtendedPalette.getColor("Dialog_Foreground");
+            Color border = themeManager.ActiveTheme.ExtendedPalette.getColor("GroupBox_Line");
+
+            BackColor = background;
+            ForeColor = foreground;
+            ApplyContainerPalette(this, background, foreground, border);
+
+            foreach (OptionsPage page in _optionPages)
+                page.RefreshTheme();
+
+            Invalidate(true);
+        }
+
+        private static void ApplyContainerPalette(Control parent, Color background, Color foreground, Color border)
+        {
+            foreach (Control child in parent.Controls)
+            {
+                if (child is Panel or TableLayoutPanel or FlowLayoutPanel or UserControl)
+                {
+                    child.BackColor = background;
+                    child.ForeColor = foreground;
+                }
+                else if (child is Splitter)
+                {
+                    child.BackColor = border;
+                }
+                else if (child.GetType() == typeof(Label))
+                {
+                    child.BackColor = background;
+                    child.ForeColor = foreground;
+                }
+
+                if (child.HasChildren)
+                    ApplyContainerPalette(child, background, foreground, border);
+            }
         }
 
 #if false
@@ -456,7 +493,10 @@ namespace mRemoteNG.UI.Forms
             try
             {
                 foreach (OptionsPage page in _optionPages)
+                {
+                    page.RevertSettings();
                     page.LoadSettings();
+                }
             }
             finally
             {

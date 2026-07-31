@@ -29,6 +29,30 @@ namespace mRemoteNG.Themes
         public DockPaneStripBase CreateDockPaneStrip(DockPane pane) => new DockPaneStripNG(pane);
     }
 
+    public class MremoteDockPaneCaptionFactory : DockPanelExtender.IDockPaneCaptionFactory
+    {
+        public DockPaneCaptionBase CreateDockPaneCaption(DockPane pane) =>
+            new MremoteNGDockPaneCaption(pane);
+    }
+
+    public class MremoteAutoHideStripFactory : DockPanelExtender.IAutoHideStripFactory
+    {
+        public AutoHideStripBase CreateAutoHideStrip(DockPanel panel) =>
+            new MremoteNGAutoHideStrip(panel);
+    }
+
+    public class MremoteDockPaneSplitterFactory : DockPanelExtender.IDockPaneSplitterControlFactory
+    {
+        public DockPane.SplitterControlBase CreateSplitterControl(DockPane pane) =>
+            new MremoteNGDockPaneSplitter(pane);
+    }
+
+    public class MremoteWindowSplitterFactory : DockPanelExtender.IWindowSplitterControlFactory
+    {
+        public SplitterBase CreateSplitterControl(ISplitterHost host) =>
+            new MremoteNGWindowSplitter(host);
+    }
+
     public class MremoteFloatWindowFactory : DockPanelExtender.IFloatWindowFactory
     {
         public FloatWindow CreateFloatWindow(DockPanel dockPanel, DockPane pane, Rectangle bounds)

@@ -27,7 +27,7 @@ using System.Resources;
     int major = 1;
     int minor = 78;
     int revision = 3;
-    int forkRelease = 2;
+    int forkRelease = 3;
 #>
 
 //Fork release: <#= forkRelease #>

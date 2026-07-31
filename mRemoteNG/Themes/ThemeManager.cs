@@ -103,6 +103,13 @@ namespace mRemoteNG.Themes
             Properties.OptionsThemePage.Default.Save();
         }
 
+        private static void ApplyApplicationColorMode(ThemeInfo? theme)
+        {
+            Application.SetColorMode(IsThemeDark(theme)
+                ? SystemColorMode.Dark
+                : SystemColorMode.Classic);
+        }
+
         #endregion
 
         #region Public Methods
@@ -119,6 +126,34 @@ namespace mRemoteNG.Themes
         public ThemeInfo? getTheme(string themeName)
         {
             return themes[themeName] as ThemeInfo;
+        }
+
+        /// <summary>
+        /// Applies a theme to the running UI without writing the selection to disk.
+        /// </summary>
+        internal void PreviewTheme(ThemeInfo theme)
+        {
+            if (theme == null || themes.Count == 0)
+                return;
+
+            _activeTheme = theme;
+            _themeActive = true;
+            ApplyApplicationColorMode(theme);
+            NotifyThemeChanged(this, new PropertyChangedEventArgs("theme"));
+        }
+
+        /// <summary>
+        /// Persists the theme currently being previewed.
+        /// </summary>
+        internal void CommitActiveTheme()
+        {
+            if (_activeTheme == null || themes.Count == 0)
+                return;
+
+            Properties.OptionsThemePage.Default.ThemingActive = _themeActive;
+            Properties.OptionsThemePage.Default.ThemeName = _activeTheme.Name;
+            Properties.OptionsThemePage.Default.IsActiveThemeDark = IsThemeDark(_activeTheme);
+            Properties.OptionsThemePage.Default.Save();
         }
 
         private bool ThemeDirExists()
@@ -217,6 +252,16 @@ namespace mRemoteNG.Themes
                         themes.Add(extTheme.Name, extTheme);
                     }
 
+                    if (themes["vs2015lightNG"] is ThemeInfo modernLightBase &&
+                        themes["vs2015darkNG"] is ThemeInfo modernDarkBase)
+                    {
+                        foreach (ThemeInfo modernTheme in ModernThemeCatalog.CreateBuiltInThemes(modernLightBase,
+                                                                                                  modernDarkBase))
+                        {
+                            themes.Add(modernTheme.Name, modernTheme);
+                        }
+                    }
+
                     //Load the embedded themes, extended palettes are taken from the vs2015 themes, trying to match the color theme
 
                     // 2015
@@ -261,6 +306,7 @@ namespace mRemoteNG.Themes
             modifiedTheme.IsExtendable = true;
             modifiedTheme.IsThemeBase = false;
             ThemeSerializer.SaveToXmlFile(modifiedTheme, baseTheme);
+            ThemeSerializer.UpdateThemeXMLValues(modifiedTheme);
             themes.Add(newThemeName, modifiedTheme);
             return modifiedTheme;
         }
@@ -333,6 +379,9 @@ namespace mRemoteNG.Themes
                 if (themes.Count == 0) return;
                 _themeActive = value;
                 Properties.OptionsThemePage.Default.ThemingActive = value;
+                Application.SetColorMode(value && IsThemeDark(_activeTheme)
+                    ? SystemColorMode.Dark
+                    : SystemColorMode.Classic);
                 PersistActiveThemeDarkFlag();
                 NotifyThemeChanged(this, new PropertyChangedEventArgs(""));
             }
@@ -357,6 +406,7 @@ namespace mRemoteNG.Themes
 
                     Properties.OptionsThemePage.Default.ThemeName = DefaultTheme.Name;
                     _activeTheme = DefaultTheme;
+                    ApplyApplicationColorMode(_activeTheme);
                     PersistActiveThemeDarkFlag();
 
                     if (changed)
@@ -367,6 +417,7 @@ namespace mRemoteNG.Themes
                 }
 
                 _activeTheme = value;
+                ApplyApplicationColorMode(value);
                 Properties.OptionsThemePage.Default.ThemeName = value.Name;
                 PersistActiveThemeDarkFlag();
                 NotifyThemeChanged(this, new PropertyChangedEventArgs("theme"));

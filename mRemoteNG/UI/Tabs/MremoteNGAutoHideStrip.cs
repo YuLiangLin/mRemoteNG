@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
+using mRemoteNG.Themes;
 using WeifenLuo.WinFormsUI.Docking;
 
 namespace mRemoteNG.UI.Tabs
@@ -113,8 +114,6 @@ namespace mRemoteNG.UI.Tabs
 
         private static int TabGapBetween => _TabGapBetween;
 
-        private static Pen PenTabBorder => SystemPens.GrayText;
-
         #endregion
 
         private static Matrix MatrixIdentity { get; } = new Matrix();
@@ -158,7 +157,7 @@ namespace mRemoteNG.UI.Tabs
                      ControlStyles.UserPaint |
                      ControlStyles.AllPaintingInWmPaint |
                      ControlStyles.OptimizedDoubleBuffer, true);
-            BackColor = SystemColors.ControlLight;
+            BackColor = StripBackground;
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -166,9 +165,14 @@ namespace mRemoteNG.UI.Tabs
             base.OnPaint(e);
             Graphics g = e.Graphics;
 
-            Color startColor = DockPanel.Theme.Skin.AutoHideStripSkin.DockStripGradient.StartColor;
-            Color endColor = DockPanel.Theme.Skin.AutoHideStripSkin.DockStripGradient.EndColor;
+            Color startColor = RuntimeThemeColorResolver.Resolve(
+                "Tab_Background",
+                DockPanel.Theme.Skin.AutoHideStripSkin.DockStripGradient.StartColor);
+            Color endColor = RuntimeThemeColorResolver.Resolve(
+                "Tab_Background",
+                DockPanel.Theme.Skin.AutoHideStripSkin.DockStripGradient.EndColor);
             LinearGradientMode gradientMode = DockPanel.Theme.Skin.AutoHideStripSkin.DockStripGradient.LinearGradientMode;
+            BackColor = startColor;
             using (LinearGradientBrush brush = new(ClientRectangle, startColor, endColor, gradientMode))
             {
                 g.FillRectangle(brush, ClientRectangle);
@@ -176,6 +180,11 @@ namespace mRemoteNG.UI.Tabs
 
             DrawTabStrip(g);
         }
+
+        private Color StripBackground =>
+            RuntimeThemeColorResolver.Resolve(
+                "Tab_Background",
+                DockPanel.Theme.Skin.AutoHideStripSkin.DockStripGradient.StartColor);
 
         protected override void OnLayout(LayoutEventArgs levent)
         {
@@ -283,11 +292,21 @@ namespace mRemoteNG.UI.Tabs
             IDockContent content = tab.Content;
 
             GraphicsPath path = GetTabOutline(tab, false, true);
-            Color startColor = DockPanel.Theme.Skin.AutoHideStripSkin.TabGradient.StartColor;
-            Color endColor = DockPanel.Theme.Skin.AutoHideStripSkin.TabGradient.EndColor;
+            Color startColor = RuntimeThemeColorResolver.Resolve(
+                "Tab_Item_Background",
+                DockPanel.Theme.Skin.AutoHideStripSkin.TabGradient.StartColor);
+            Color endColor = RuntimeThemeColorResolver.Resolve(
+                "Tab_Item_Background",
+                DockPanel.Theme.Skin.AutoHideStripSkin.TabGradient.EndColor);
             LinearGradientMode gradientMode = DockPanel.Theme.Skin.AutoHideStripSkin.TabGradient.LinearGradientMode;
-            g.FillPath(new LinearGradientBrush(rectTabOrigin, startColor, endColor, gradientMode), path);
-            g.DrawPath(PenTabBorder, path);
+            using (LinearGradientBrush tabBrush = new(rectTabOrigin, startColor, endColor, gradientMode))
+            using (Pen borderPen = new(RuntimeThemeColorResolver.Resolve(
+                       "List_Item_Border",
+                       SystemColors.GrayText)))
+            {
+                g.FillPath(tabBrush, path);
+                g.DrawPath(borderPen, path);
+            }
 
             // Set no rotate for drawing icon and text
             using (Matrix matrixRotate = g.Transform)
@@ -334,14 +353,22 @@ namespace mRemoteNG.UI.Tabs
                 rectText.Width -= ImageGapLeft + imageWidth + ImageGapRight + TextGapLeft;
                 rectText = RtlTransform(GetTransformedRectangle(dockState, rectText), dockState);
 
-                Color textColor = DockPanel.Theme.Skin.AutoHideStripSkin.TabGradient.TextColor;
+                Color textColor = RuntimeThemeColorResolver.Resolve(
+                    "Tab_Item_Foreground",
+                    DockPanel.Theme.Skin.AutoHideStripSkin.TabGradient.TextColor);
 
                 if (dockState == DockState.DockLeftAutoHide || dockState == DockState.DockRightAutoHide)
-                    g.DrawString(content.DockHandler.TabText, TextFont, new SolidBrush(textColor), rectText,
+                {
+                    using SolidBrush textBrush = new(textColor);
+                    g.DrawString(content.DockHandler.TabText, TextFont, textBrush, rectText,
                                  StringFormatTabVertical);
+                }
                 else
-                    g.DrawString(content.DockHandler.TabText, TextFont, new SolidBrush(textColor), rectText,
+                {
+                    using SolidBrush textBrush = new(textColor);
+                    g.DrawString(content.DockHandler.TabText, TextFont, textBrush, rectText,
                                  StringFormatTabHorizontal);
+                }
 
                 // Set rotate back
                 g.Transform = matrixRotate;

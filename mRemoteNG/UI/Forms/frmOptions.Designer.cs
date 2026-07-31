@@ -20,10 +20,7 @@ namespace mRemoteNG.UI.Forms
         {
             if (disposing)
             {
-                if (_isInitialized)
-                {
-                    ThemeManager.getInstance().ThemeChanged -= ApplyTheme;
-                }
+                ThemeManager.getInstance().ThemeChanged -= ApplyTheme;
 
                 components?.Dispose();
             }

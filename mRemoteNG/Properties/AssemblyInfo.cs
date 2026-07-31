@@ -11,7 +11,7 @@ using System.Resources;
 // Compute version values
 
 
-//Fork release: 2
+//Fork release: 3
 
 // General Information
 [assembly: AssemblyTitle("mRemoteNG")]
@@ -24,7 +24,7 @@ using System.Resources;
 [assembly: AssemblyCulture("")]
 
 // Version information
-[assembly: AssemblyVersion("1.78.3.2")]
-[assembly: AssemblyFileVersion("1.78.3.2")]
+[assembly: AssemblyVersion("1.78.3.3")]
+[assembly: AssemblyFileVersion("1.78.3.3")]
 [assembly: NeutralResourcesLanguageAttribute("en-US")]
-[assembly: AssemblyInformationalVersion("1.78.3-yll.2 x64")]
+[assembly: AssemblyInformationalVersion("1.78.3-yll.3 x64")]

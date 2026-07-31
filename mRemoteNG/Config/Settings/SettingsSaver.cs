@@ -35,11 +35,6 @@ namespace mRemoteNG.Config.Settings
 
                 Properties.App.Default.MainFormState = frmMain.WindowState;
 
-                if (frmMain.Fullscreen != null)
-                {
-                    Properties.App.Default.MainFormKiosk = frmMain.Fullscreen.Value;
-                }
-
                 Properties.App.Default.FirstStart = false;
                 Properties.App.Default.ResetPanels = false;
                 Properties.App.Default.ResetToolbars = false;

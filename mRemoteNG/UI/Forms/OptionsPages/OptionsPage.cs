@@ -50,6 +50,11 @@ namespace mRemoteNG.UI.Forms.OptionsPages
         {
         }
 
+        internal void RefreshTheme()
+        {
+            ApplyTheme();
+        }
+
         /// <summary>
         /// Checks if registry settings were applied and disables the corresponding UI controls.
         /// If any settings are applied, it also displays an information label.
